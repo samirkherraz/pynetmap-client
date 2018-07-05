@@ -1,0 +1,9 @@
+Package: pynetmap-client
+Essential: no
+Priority: optional
+Section: base
+Version: 1.0-1
+Maintainer: Samir KHERRAZ <samir.kherraz@outlook.fr>
+Architecture: all
+Depends: python, python-gtk2,sshpass, python-requests,python-notify2 , graphviz
+Description: pynetmap app

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Network Mapping Tool
+GenericName=Network Mapping Tool
+Keywords=network;mapping;team;maintenance;
+Comment=Network Mapping Tool
+Icon=/usr/share/pynetmap/icon.png
+Exec=pynetmap-client
+Categories=Gtk;Tools;Office;ProjectManagement;
