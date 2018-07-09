@@ -101,6 +101,10 @@ class Boot(gtk.Window):
         newtb.connect("clicked", self.export)
         toolbar.insert(newtb, 5)
 
+        newtb = gtk.ToolButton(gtk.STOCK_REFRESH)
+        newtb.connect("clicked", self.reload)
+        toolbar.insert(newtb, 6)
+
         vBox.pack_start(toolbar, False, False, 0)
         hBox = gtk.HPaned()
         hBox.set_position(200)
@@ -181,6 +185,9 @@ class Boot(gtk.Window):
             self.tree.expand_all()
 
         dia.destroy()
+
+    def reload(self, _):
+        self.api.reload()
 
     def refresh(self):
         self.treeStore.clear()

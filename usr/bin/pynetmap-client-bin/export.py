@@ -12,7 +12,7 @@ class Export:
             st += self.write(elm[k], 0)
         self.filesystem.write(st)
         self.filesystem.close()
-        os.system("xdg-open /tmp/export-"+str(os.getuid())+".md")
+        os.system("xdg-open /tmp/export-"+str(os.getuid())+".md &")
 
     def writeNode(self, el, spc):
         s = "___ \n"
