@@ -9,6 +9,47 @@ except:
     print "No notification handler"
 
 
+class Config(gtk.Dialog):
+    def prepare(self):
+        self._fields = dict()
+        self.set_title("Configuration")
+        self.set_position(gtk.WIN_POS_CENTER)
+        self.set_default_size(600, 400)
+
+    def getField(self, k):
+        return self._fields[k].get_text()
+
+    def setField(self, k, data):
+        self._fields[k].set_text(data)
+
+    def build(self, keylist):
+        self.container = gtk.VBox()
+        swin = gtk.ScrolledWindow()
+        swin.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        swin.add_with_viewport(self.container)
+        self.vbox.add(swin)
+        self.grid = gtk.Table(len(keylist)+1, 2, False)
+        i = 0
+        self._fields = dict()
+        for (key, _) in keylist:
+            label = gtk.Label(key)
+            label.set_alignment(0.1, 0.5)
+            self.grid.attach(label, 0, 1, i, i+1)
+            self._fields[key] = gtk.Entry()
+            self.grid.attach(self._fields[key], 1, 2, i, i+1)
+            i += 1
+        self.container.pack_start(self.grid, False, False, 0)
+        self.show_all()
+
+    def __init__(self, list):
+        gtk.Dialog.__init__(self, "Configuration", None, flags=gtk.DIALOG_MODAL,
+                            buttons=(gtk.STOCK_OK, gtk.RESPONSE_OK,
+                                     gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+        self.prepare()
+        self.build(list)
+        self.show_all()
+
+
 class Form(gtk.Dialog):
 
     def prepare(self):
