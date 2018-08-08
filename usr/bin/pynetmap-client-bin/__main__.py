@@ -38,8 +38,12 @@ class Boot(gtk.Window):
         self.set_position(gtk.WIN_POS_CENTER)
         self.connect("delete_event", gtk.main_quit)
         self.connect("key-press-event", self.on_key_release)
-        self.status_ok_icon = self.render_icon(gtk.STOCK_OK, 1)
-        self.status_not_ok_icon = self.render_icon(gtk.STOCK_DIALOG_ERROR, 1)
+        self.status_ram = self.render_icon(gtk.STOCK_DIALOG_INFO, 1)
+        self.status_disk = self.render_icon(gtk.STOCK_HARDDISK, 1)
+        self.status_cpu = self.render_icon(gtk.STOCK_EXECUTE, 1)
+        self.status_ok = self.render_icon(gtk.STOCK_OK, 0)
+        self.status_unknown = self.render_icon(gtk.STOCK_EDIT, 1)
+        self.status_stop = self.render_icon(gtk.STOCK_STOP, 1)
 
     def open_terminal(self, _o):
         k = self.store.head()
@@ -316,15 +320,29 @@ class Boot(gtk.Window):
             self.populate(store["__CHILDREN__"], row)
 
     def check_status(self, elm):
-        if "Disk" in elm.keys() and float(elm["Disk"][len(elm["Disk"])-1].replace("[^0-9.]+", "").replace("%", "")) > 90:
-            return self.status_not_ok_icon
-        if "CPU Usage" in elm.keys() and float(elm["CPU Usage"][len(elm["CPU Usage"])-1].replace("[^0-9.]+", "").replace("%", "")) > 90:
-            return self.status_not_ok_icon
-        if "Memory" in elm.keys() and float(elm["Memory"][len(elm["Memory"])-1].replace("[^0-9.]+", "").replace("%", "")) > 90:
-            return self.status_not_ok_icon
-        if "Status" in elm.keys() and elm["Status"] != "running":
-            return self.status_not_ok_icon
-        return self.status_ok_icon
+        try:
+            if elm["Status"] != "running":
+                return self.status_stop
+        except:
+            """ not concernet """
+            return self.status_ok
+        try:
+            if float(elm["Disk"][len(elm["Disk"])-1].replace("[^0-9.]+", "").replace("%", "")) > 90:
+                return self.status_disk
+        except:
+            return self.status_unknown
+        try:
+            if float(elm["CPU Usage"][len(elm["CPU Usage"])-1].replace("[^0-9.]+", "").replace("%", "")) > 90:
+                return self.status_cpu
+        except:
+            return self.status_unknown
+        try:
+            if float(elm["Memory"][len(elm["Memory"])-1].replace("[^0-9.]+", "").replace("%", "")) > 90:
+                return self.status_ram
+        except:
+            return self.status_unknown
+
+        return self.status_ok
 
     def draw(self, elm):
         if len(elm) > 0:

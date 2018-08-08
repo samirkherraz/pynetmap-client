@@ -72,7 +72,7 @@ class Graph:
                         table[1].append(k)
                     elif type(vm[k]) is list:
                         table[0].append(k)
-                    elif "\n" in str(vm[k]) or (k in schema and schema[k] == "LONG"):
+                    elif "\n" in str(vm[k]) or ("|" in str(vm[k])) or (k in schema and schema[k] == "LONG"):
                         table[2].append(k)
                     else:
                         table[1].append(k)
@@ -105,12 +105,18 @@ class Graph:
             for k in table[2]:
                 rst = str(vm[k])
                 rst = rst.replace('"', '\"')
-                tbl2 += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><B>"+k + \
-                    "</B></TD><TD VALIGN='TOP' ALIGN='LEFT'>"
+
+                tbl2 += "<TR><TD VALIGN='TOP' ALIGN='LEFT'>"
+
+                tbl2 += "<TABLE border='0' cellborder='0' cellspacing='5'><TR><TD ALIGN='LEFT'><B><U>" + \
+                    k+"</U></B></TD></TR>"
 
                 for l in rst.split("\n"):
-                    tbl2 += l.strip()
-                    tbl2 += "<BR ALIGN='LEFT'/>"
+                    tbl2 += "<TR>"
+                    for d in l.split("|"):
+                        tbl2 += "<TD VALIGN='TOP' ALIGN='LEFT'>"+d.strip()+"</TD>"
+                    tbl2 += "</TR>"
+                tbl2 += "</TABLE>"
                 tbl2 += "</TD></TR>"
                 tbl2b = True
             tbl2 += "</TABLE>"
