@@ -320,27 +320,34 @@ class Boot(gtk.Window):
             self.populate(store["__CHILDREN__"], row)
 
     def check_status(self, elm):
+
         try:
             if elm["Status"] != "running":
                 return self.status_stop
         except:
             """ not concernet """
             return self.status_ok
+
         try:
-            if float(elm["Disk"][len(elm["Disk"])-1].replace("[^0-9.]+", "").replace("%", "")) > 90:
+            if elm["__SSH__"] == "No":
+                return self.status_unknown
+        except:
+            return self.status_unknown
+        try:
+            if float(elm["Disk"][len(elm["Disk"])-1].replace("[^0-9.]+", "")) > 90:
                 return self.status_disk
         except:
-            return self.status_unknown
+            pass
         try:
-            if float(elm["CPU Usage"][len(elm["CPU Usage"])-1].replace("[^0-9.]+", "").replace("%", "")) > 90:
+            if float(elm["CPU Usage"][len(elm["CPU Usage"])-1].replace("[^0-9.]+", "")) > 90:
                 return self.status_cpu
         except:
-            return self.status_unknown
+            pass
         try:
-            if float(elm["Memory"][len(elm["Memory"])-1].replace("[^0-9.]+", "").replace("%", "")) > 90:
+            if float(elm["Memory"][len(elm["Memory"])-1].replace("[^0-9.]+", "")) > 90:
                 return self.status_ram
         except:
-            return self.status_unknown
+            pass
 
         return self.status_ok
 
