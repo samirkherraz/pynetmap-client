@@ -16,9 +16,9 @@ class Export:
 
     def writeNode(self, el, spc):
         s = "___ \n"
-        s += spc+" "+el["__SCHEMA__"]+" - "+el["__ID__"]+"\n"
-        hidden = ["__ID__", "Password", "__SCHEMA__", "__CHILDREN__", "User", "Password",
-                  "Tunnel Password", "Tunnel User", "Tunnel SSH Port", "Uptime", "CPU Usage", "Status"]
+        s += spc+" "+el["base.core.schema"]+" - "+el["base.name"]+"\n"
+        hidden = ["base.ssh.password", "base.core.schema", "base.ssh.user", "base.ssh.port",
+                  "base.tunnel.user", "base.tunnel.password", "base.tunnel.port"]
         for key in el:
             if key in hidden:
                 pass
@@ -38,6 +38,6 @@ class Export:
         if spc == "":
             spc = "#"
         st = self.writeNode(node, spc)
-        for k in node["__CHILDREN__"]:
-            st += self.write(node["__CHILDREN__"][k], lvl+2)
+        for k in node["base.core.children"]:
+            st += self.write(node["base.core.children"][k], lvl+2)
         return st
