@@ -1,0 +1,11 @@
+Source: pynetmap-client
+Section: misc
+Priority: optional
+Maintainer: Samir KHERRAZ <samir.kherraz@outlook.fr>
+Build-Depends: debhelper (>=9)
+Standards-Version: 3.9.6
+Homepage: http://git.newgen.cloudlinux.eu/skherraz/pynetmap-client.git
+Package: pynetmap-client
+Architecture: all
+Depends: python, python-gtk2,sshpass, python-requests,python-notify2 , graphviz
+Description: Pynetmap client is a gui application used to map a virtual infrastructure ( proxmox ) 

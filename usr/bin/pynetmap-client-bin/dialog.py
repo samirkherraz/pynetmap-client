@@ -2,7 +2,11 @@
 import gtk
 import gobject
 import notify2
-notify2.init("PyNetMAP")
+
+try:
+    notify2.init("PyNetMAP")
+except:
+    print "No notification handler"
 
 
 class Form(gtk.Dialog):
@@ -230,7 +234,10 @@ class Error(gtk.MessageDialog):
 
 class Notify:
     def __init__(self, title, message):
-        notify2.Notification(title,
-                             message,
-                             "/usr/share/pynetmap/icon.png"
-                             ).show()
+        try:
+            notify2.Notification(title,
+                                 message,
+                                 "/usr/share/pynetmap/icon.png"
+                                 ).show()
+        except:
+            print title + "::" + message

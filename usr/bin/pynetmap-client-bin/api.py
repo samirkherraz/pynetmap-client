@@ -16,11 +16,18 @@ class APIDaemon(Thread):
         self._stop = Event()
         self.setDaemon(True)
         self.last_update = -1
-        self.url = "http://"+IP+":"+PORT+"/"
+        self.url = "https://"+IP+":"+PORT+"/"
         self.cookies = None
+        self.session = requests.Session()
+        self.session.verify = False
+
+    def reload(self):
+        self.session.post(
+            self.url+"reload", cookies=self.cookies).json()
+        self.state_check()
 
     def state_check(self):
-        t = requests.post(
+        t = self.session.post(
             self.url+"state_check", json=json.dumps({"TIMESTAMP": self.last_update}), cookies=self.cookies).json()
         self.last_update = t["TIMESTAMP"]
         print t["ACTIONS"]
@@ -33,7 +40,7 @@ class APIDaemon(Thread):
         return self.auth()
 
     def auth(self):
-        t = requests.post(self.url+"auth", json=json.dumps(self.d)).json()
+        t = self.session.post(self.url+"auth", json=json.dumps(self.d)).json()
         if t["TOKEN"] != None:
             self.cookies = {"TOKEN": t["TOKEN"]}
             Notify("Connection succeded",
@@ -45,14 +52,16 @@ class APIDaemon(Thread):
 
     def auth_check(self):
 
-        t = requests.post(self.url+"auth_check", cookies=self.cookies).json()
+        t = self.session.post(self.url+"auth_check",
+                              cookies=self.cookies).json()
         try:
             return t["AUTHORIZATION"]
         except:
             return False
 
     def pull_data(self):
-        data = requests.post(self.url+"pull_data", cookies=self.cookies).json()
+        data = self.session.post(self.url+"pull_data",
+                                 cookies=self.cookies).json()
         try:
             if not data["AUTHORIZATION"]:
                 return None
@@ -60,8 +69,8 @@ class APIDaemon(Thread):
             return data
 
     def pull_schema(self):
-        data = requests.post(self.url+"pull_schema",
-                             cookies=self.cookies).json()
+        data = self.session.post(self.url+"pull_schema",
+                                 cookies=self.cookies).json()
         try:
             if not data["AUTHORIZATION"]:
                 return None
@@ -69,8 +78,8 @@ class APIDaemon(Thread):
             return data
 
     def push_data(self, store):
-        data = requests.post(self.url+"push_data", json=json.dumps(store.head()),
-                             cookies=self.cookies).json()
+        data = self.session.post(self.url+"push_data", json=json.dumps(store.head()),
+                                 cookies=self.cookies).json()
         try:
             if not data["AUTHORIZATION"]:
                 return None
@@ -78,8 +87,8 @@ class APIDaemon(Thread):
             return data
 
     def push_schema(self, store):
-        data = requests.post(self.url+"push_schema", json=json.dumps(store.head()),
-                             cookies=self.cookies).json()
+        data = self.session.post(self.url+"push_schema", json=json.dumps(store.head()),
+                                 cookies=self.cookies).json()
         try:
             if not data["AUTHORIZATION"]:
                 return None
