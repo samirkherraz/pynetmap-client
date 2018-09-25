@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+import os
 import gobject
 gobject.threads_init()
 import gtk
@@ -14,6 +14,8 @@ from graph import Graph
 from terminal import Terminal
 from api import APIDaemon
 from export import Export
+
+from configstore import ConfigStore
 
 
 class Boot(gtk.Window):
@@ -42,7 +44,7 @@ class Boot(gtk.Window):
         for o in reversed(self.selection):
             el = k[o]
             k = el["__CHILDREN__"]
-        Terminal(el)
+        Terminal(el, self.config)
 
     def build(self):
 
@@ -105,6 +107,10 @@ class Boot(gtk.Window):
         newtb.connect("clicked", self.reload)
         toolbar.insert(newtb, 6)
 
+        newtb = gtk.ToolButton(gtk.STOCK_PROPERTIES)
+        newtb.connect("clicked", self.edit_config)
+        toolbar.insert(newtb, 7)
+
         vBox.pack_start(toolbar, False, False, 0)
         hBox = gtk.HPaned()
         hBox.set_position(200)
@@ -117,6 +123,11 @@ class Boot(gtk.Window):
         hBox.add(self.canvas)
         vBox.add(hBox)
         self.add(vBox)
+
+    def edit_config(self, _):
+        self.config.check()
+        self.api.reset()
+        self.api.reload()
 
     def search(self, elm):
         res = Ask(self, "Search", "Type any on object fields value/part")
@@ -194,11 +205,13 @@ class Boot(gtk.Window):
         self.populate(self.store.head())
         self.tree.expand_all()
         k = self.store.head()
+        el = None
         for o in reversed(self.selection):
             el = k[o]
             k = el["__CHILDREN__"]
-        if self.search_function(str(el["__ID__"]), [0]):
-            self.selection_changed(None)
+        if el != None:
+            if self.search_function(str(el["__ID__"]), [0]):
+                self.selection_changed(None)
 
     def delete_entry(self, widget):
         k = self.store.head()
@@ -307,6 +320,8 @@ class Boot(gtk.Window):
 
     def __init__(self, store):
         super(Boot, self).__init__()
+        self.config = ConfigStore()
+        self.config.read()
         self.store = store
         self.prepare()
         self.build()
@@ -331,6 +346,10 @@ class Boot(gtk.Window):
         auth = True
         while auth:
             auth = False
+            if not self.api.is_server_online():
+                self.config.check()
+                self.api.reset()
+
             try:
                 self.auth_gui(None)
             except:

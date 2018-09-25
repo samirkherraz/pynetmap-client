@@ -2,7 +2,6 @@ import requests
 from database import Database
 import json
 from threading import Thread, Lock, Event
-from const import IP, PORT
 from dialog import Ask, Error, Notify
 import hashlib
 import gtk
@@ -16,10 +15,15 @@ class APIDaemon(Thread):
         self._stop = Event()
         self.setDaemon(True)
         self.last_update = -1
-        self.url = "https://"+IP+":"+PORT+"/"
         self.cookies = None
         self.session = requests.Session()
         self.session.verify = False
+        self.reset()
+
+    def reset(self):
+        self.url = "https://" + \
+            self.ui.config.get("ServerIP")+":" + \
+            self.ui.config.get("ServerPort")+"/"
 
     def reload(self):
         self.session.post(
@@ -38,6 +42,13 @@ class APIDaemon(Thread):
         self.d["username"] = username
         self.d["password"] = hashlib.sha256(password).hexdigest()
         return self.auth()
+
+    def is_server_online(self):
+        try:
+            self.session.post(self.url)
+            return True
+        except:
+            return False
 
     def auth(self):
         t = self.session.post(self.url+"auth", json=json.dumps(self.d)).json()

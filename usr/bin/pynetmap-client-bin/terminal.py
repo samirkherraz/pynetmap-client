@@ -1,17 +1,25 @@
 #!/usr/bin/python
 import os
-from const import TERMINAL, TERMINAL_COMMAND
+from const import TERMINAL
 
 
 class Terminal:
-    def __init__(self, elm):
+    def __init__(self, elm, config):
         try:
             cmd = TERMINAL
+            cmd = cmd.replace("[ServerIP]", str(
+                config.get("ServerIP")).strip())
+            cmd = cmd.replace("[SSHUsername]", str(
+                config.get("SSHUsername")).strip())
+            cmd = cmd.replace("[SSHPassword]", str(
+                config.get("SSHPassword")).strip())
+            cmd = cmd.replace("[SSHPort]", str(config.get("SSHPort")).strip())
+            cmd = cmd.replace("[TerminalCommand]", str(
+                config.get("TerminalCommand")).strip())
             cmd = cmd.replace("[IP]", str(elm["IP"]).strip())
             cmd = cmd.replace("[USER]", str(elm["User"]).strip())
             cmd = cmd.replace("[PASS]", str(
                 elm["Password"]).replace("'", "\\'").strip())
-            cmd = cmd.replace("[TERMINAL]", TERMINAL_COMMAND.strip())
             os.system(cmd)
         except:
             pass
