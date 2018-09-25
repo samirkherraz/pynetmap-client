@@ -6,7 +6,7 @@ import notify2
 try:
     notify2.init("PyNetMAP")
 except:
-    print "No notification handler"
+    pass
 
 
 class Config(gtk.Dialog):
@@ -15,12 +15,6 @@ class Config(gtk.Dialog):
         self.set_title("Configuration")
         self.set_position(gtk.WIN_POS_CENTER)
         self.set_default_size(600, 400)
-
-    def getField(self, k):
-        return self._fields[k].get_text()
-
-    def setField(self, k, data):
-        self._fields[k].set_text(data)
 
     def build(self, keylist):
         self.container = gtk.VBox()
@@ -32,8 +26,8 @@ class Config(gtk.Dialog):
         i = 0
         self._fields = dict()
         for (key, _) in keylist:
-            label = gtk.Label(key)
-            label.set_alignment(0.1, 0.5)
+            label = gtk.Label(self.ui.lang.get(key))
+            label.set_alignment(0, 0.5)
             self.grid.attach(label, 0, 1, i, i+1)
             self._fields[key] = gtk.Entry()
             self.grid.attach(self._fields[key], 1, 2, i, i+1)
@@ -41,151 +35,142 @@ class Config(gtk.Dialog):
         self.container.pack_start(self.grid, False, False, 0)
         self.show_all()
 
-    def __init__(self, list):
+    def set_field(self, id, value):
+        try:
+            self._fields[id].set_text(value)
+        except:
+            pass
+
+    def get_field(self, id):
+        try:
+            return self._fields[id].get_text()
+        except:
+            return None
+
+    def __init__(self, ui):
         gtk.Dialog.__init__(self, "Configuration", None, flags=gtk.DIALOG_MODAL,
                             buttons=(gtk.STOCK_OK, gtk.RESPONSE_OK,
                                      gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+        self.ui = ui
         self.prepare()
-        self.build(list)
+        self.build(self.ui.config.configuration.items("GLOBAL"))
         self.show_all()
 
 
 class Form(gtk.Dialog):
 
     def prepare(self):
+        self._sfields = ["base.core.schema", "parent"]
         self._fields = dict()
-        self.set_title("Add / Edit")
         self.set_position(gtk.WIN_POS_CENTER)
         self.set_default_size(600, 400)
 
     def build(self, template=None):
-        self._schema = gtk.ComboBox()
+        self._fields["base.core.schema"] = gtk.ComboBox()
         cell = gtk.CellRendererText()
-        self._schema.pack_start(cell)
-        self._schema.add_attribute(cell, 'text', 0)
+        self._fields["base.core.schema"].pack_start(cell)
+        self._fields["base.core.schema"].add_attribute(cell, 'text', 0)
 
         store = gtk.ListStore(gobject.TYPE_STRING)
-        for key in self.store.schema():
+        for key in self.ui.store.get_table("schema"):
             store.append([key])
-        self._schema.set_model(store)
-        self._schema.connect('changed', self.on_changed)
+        self._fields["base.core.schema"].set_model(store)
+        self._fields["base.core.schema"].connect('changed', self.on_changed)
 
         toolbar = gtk.HBox()
-        toolbar.add(self._schema)
+        toolbar.add(self._fields["base.core.schema"])
         self.container = gtk.VBox()
         self.vbox.pack_start(toolbar, False, True, 0)
         swin = gtk.ScrolledWindow()
         swin.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         swin.add_with_viewport(self.container)
         self.vbox.add(swin)
-        self._schema.set_active(0)
+        self._fields["base.core.schema"].set_active(0)
 
-    def getParent(self):
-        if self._has_parent:
-            return self._parent.get_active_text()
-        else:
-            return None
-
-    def getschema(self):
-        return self._schema.get_active_text()
-
-    def setschema(self, schema):
-        i = 0
-        while self._schema.get_active_text() != schema and self._schema.get_active_text() != None:
-            self._schema.set_active(i)
-            i += 1
-
-    def getID(self):
-        return self._id.get_text()
-
-    def setID(self, id):
-        return self._id.set_text(id)
-
-    def getFields(self):
+    def get_fields(self):
         ret = dict()
-        ret["__SCHEMA__"] = self.getschema()
-        ret["__ID__"] = self.getID()
         for d in self._fields:
-            if type(self._fields[d]) is gtk.Entry:
-                ret[d] = self._fields[d].get_text()
-            elif type(self._fields[d]) is gtk.TextBuffer:
-                start_iter = self._fields[d].get_start_iter()
-                end_iter = self._fields[d].get_end_iter()
-                ret[d] = self._fields[d].get_text(start_iter, end_iter, True)
-            elif type(self._fields[d]) is gtk.ComboBox:
-                ret[d] = self._fields[d].get_active_text()
+            if d.startswith("base."):
+                ret[d] = self.get_field(d)
         return ret
 
-    def setParent(self, parent):
-        i = 0
-        self._parent.set_active(i)
-        while self._parent.get_active_text() != parent and self._parent.get_active_text() != None:
-            self._parent.set_active(i)
-            i += 1
+    def set_field(self, id, value):
+        try:
+            if type(self._fields[id]) is gtk.Entry:
+                self._fields[id].set_text(value)
+            elif type(self._fields[id]) is gtk.TextBuffer:
+                self._fields[id].set_text(value, len(value))
+            elif type(self._fields[id]) is gtk.ComboBox:
+                i = 0
+                self._fields[id].set_active(i)
+                while self._fields[id].get_active_text() != value and self._fields[id].get_active_text() != None:
+                    self._fields[id].set_active(i)
+                    i += 1
+        except:
+            pass
 
-    def setFields(self, data):
-        self.setschema(data["__SCHEMA__"])
-        self.setID(data["__ID__"])
+    def get_field(self, id):
+        try:
+            if type(self._fields[id]) is gtk.Entry:
+                ret = self._fields[id].get_text()
+            elif type(self._fields[id]) is gtk.TextBuffer:
+                start_iter = self._fields[id].get_start_iter()
+                end_iter = self._fields[id].get_end_iter()
+                ret = self._fields[id].get_text(
+                    start_iter, end_iter, True)
+            elif type(self._fields[id]) is gtk.ComboBox:
+                ret = self._fields[id].get_active_text()
+
+            return ret
+        except:
+            return None
+
+    def set_fields(self, data):
+        self.set_field("base.core.schema", data["base.core.schema"])
         for d in data:
-            if not d.startswith("__") and data[d] != None:
-                try:
-                    if type(self._fields[d]) is gtk.Entry:
-                        self._fields[d].set_text(data[d])
-                    elif type(self._fields[d]) is gtk.TextBuffer:
-                        self._fields[d].set_text(data[d], len(data[d]))
-                    elif type(self._fields[d]) is gtk.ComboBox:
-                        i = 0
-                        self._fields[d].set_active(i)
-                        while self._fields[d].get_active_text() != data[d] and self._fields[d].get_active_text() != None:
-                            self._fields[d].set_active(i)
-                            print self._fields[d].get_active_text()
-                            i += 1
-                except:
-                    pass
+            if d not in self._sfields and data[d] != None:
+                self.set_field(d, data[d])
+
+    def cleanup_fields(self):
+        for d in self._fields.keys():
+            if d not in self._sfields:
+                del self._fields[d]
 
     def form(self, template):
+        self.cleanup_fields()
         if template != None:
             self.container.forall(self.container.remove)
             self.grid = gtk.Table(len(template["Fields"])+1, 2, False)
-            elms = self.store.find_by_schema(template["Parents"])
             i = 0
+            elms = self.ui.store.find_by_schema(
+                template["Parents"]) if template["Parents"] != None else []
             if len(elms) > 0:
                 self._has_parent = True
-                self._parent = gtk.ComboBox()
+                self._fields["parent"] = gtk.ComboBox()
                 store = gtk.ListStore(str, str)
                 cell = gtk.CellRendererText()
-                self._parent.pack_start(cell)
-                self._parent.add_attribute(cell, 'text', 1)
+                self._fields["parent"].pack_start(cell)
+                self._fields["parent"].add_attribute(cell, 'text', 1)
                 for el in elms:
-                    store.append([el, elms[el]["__ID__"]])
-                self._parent.set_model(store)
-                self._parent.set_active(0)
+                    store.append(
+                        [el, self.ui.store.get_attr("base", el, "base.name")])
+                self._fields["parent"].set_model(store)
+                self._fields["parent"].set_active(0)
 
                 if template["Build"] == "MANUAL":
-                    label = gtk.Label("Parent")
-                    label.set_alignment(0.1, 0.5)
+                    label = gtk.Label(self.ui.lang.get("gtk.field.parent"))
+                    label.set_alignment(0, 0.5)
                     self.grid.attach(label, 0, 1, 0, 1)
-                    self.grid.attach(self._parent, 1, 2, i, i+1)
+                    self.grid.attach(self._fields["parent"], 1, 2, i, i+1)
                     i += 1
             else:
                 self._has_parent = False
 
-            self._id = gtk.Entry()
-            if "__ID__" in template["Fields"]:
-                label = gtk.Label("Nom")
-                label.set_alignment(0.1, 0.5)
-                self.grid.attach(label, 0, 1, i, i+1)
-                self.grid.attach(self._id, 1, 2, i, i+1)
-                i += 1
-
-            self._fields = dict()
             keylist = template["Fields"].keys()
             keylist.sort()
             for key in keylist:
-                if key.startswith("__"):
-                    continue
-                label = gtk.Label(key)
-                label.set_alignment(0.1, 0.5)
+                label = gtk.Label(self.ui.lang.get(key))
+                label.set_alignment(0, 0.5)
                 self.grid.attach(label, 0, 1, i, i+1)
                 if template["Fields"][key] == "LONG":
                     textview = gtk.TextView()
@@ -216,28 +201,54 @@ class Form(gtk.Dialog):
             self.show_all()
 
     def on_changed(self, widget):
-        self.form(self.store.schema()[
-            widget.get_active_text()])
+        self.form(self.ui.store.get("schema", widget.get_active_text()))
 
-    def __init__(self, name, parent, database):
+    def __init__(self, name, parent):
         gtk.Dialog.__init__(self, name, parent, flags=gtk.DIALOG_MODAL,
                             buttons=(gtk.STOCK_OK, gtk.RESPONSE_OK,
                                      gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
-        self.store = database
+        self.ui = parent
         self.prepare()
         self.build()
-        self.show_all()
 
 
 class Edit(Form):
-    def __init__(self, parent, database):
-        Form.__init__(self, "Edit", parent, database)
-        self._schema.set_sensitive(False)
+    def __init__(self, parent):
+        Form.__init__(self, parent.lang.get(
+            "gtk.edit.dialog.title"), parent)
+        if len(self.ui.selection) > 0:
+            self._fields["base.core.schema"].set_sensitive(False)
+            self.set_fields(self.ui.store.get("base", self.ui.selection[0]))
+            if len(self.ui.selection) > 1:
+                self.set_field("parent", self.ui.selection[1])
+            self.show_all()
+            result = self.run()
+            if result == gtk.RESPONSE_OK:
+                for key in self.get_fields():
+                    self.ui.store.set_attr(
+                        "base", self.ui.selection[0], key, self.get_field(key))
+                if len(self.ui.selection) > 1 and self.ui.selection[1] != self.get_field("parent"):
+                    self.ui.store.move(
+                        self.ui.selection[0], self.get_field("parent"))
+
+        self.destroy()
 
 
 class Add(Form):
-    def __init__(self, parent, database):
-        Form.__init__(self, "Add", parent, database)
+    def __init__(self, parent):
+        Form.__init__(self, parent.lang.get(
+            "gtk.add.dialog.title"), parent)
+        self.show_all()
+        result = self.run()
+        if result == gtk.RESPONSE_OK:
+            if self._has_parent:
+                newid = self.ui.store.create(self.get_field("parent"))
+            else:
+                newid = self.ui.store.create()
+            self.ui.store.set(
+                "base", newid, self.get_fields())
+
+        self.destroy()
 
 
 class Ask(gtk.Dialog):
@@ -301,4 +312,4 @@ class Notify:
                                  "/usr/share/pynetmap/icon.png"
                                  ).show()
         except:
-            print title + "::" + message
+            pass
