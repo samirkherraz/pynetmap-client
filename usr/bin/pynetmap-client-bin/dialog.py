@@ -112,10 +112,13 @@ class Form(gtk.Dialog):
                 start_iter = self._fields[d].get_start_iter()
                 end_iter = self._fields[d].get_end_iter()
                 ret[d] = self._fields[d].get_text(start_iter, end_iter, True)
+            elif type(self._fields[d]) is gtk.ComboBox:
+                ret[d] = self._fields[d].get_active_text()
         return ret
 
     def setParent(self, parent):
         i = 0
+        self._parent.set_active(i)
         while self._parent.get_active_text() != parent and self._parent.get_active_text() != None:
             self._parent.set_active(i)
             i += 1
@@ -130,6 +133,13 @@ class Form(gtk.Dialog):
                         self._fields[d].set_text(data[d])
                     elif type(self._fields[d]) is gtk.TextBuffer:
                         self._fields[d].set_text(data[d], len(data[d]))
+                    elif type(self._fields[d]) is gtk.ComboBox:
+                        i = 0
+                        self._fields[d].set_active(i)
+                        while self._fields[d].get_active_text() != data[d] and self._fields[d].get_active_text() != None:
+                            self._fields[d].set_active(i)
+                            print self._fields[d].get_active_text()
+                            i += 1
                 except:
                     pass
 
@@ -187,8 +197,18 @@ class Form(gtk.Dialog):
                     scrolledwindow.set_size_request(-1, 150)
                     self.grid.attach(scrolledwindow, 1, 2, i, i+1)
                     self._fields[key] = textview.get_buffer()
-                else:
+                elif template["Fields"][key] == "SHORT":
                     self._fields[key] = gtk.Entry()
+                    self.grid.attach(self._fields[key], 1, 2, i, i+1)
+                elif type(template["Fields"][key]) is list:
+                    self._fields[key] = gtk.ComboBox()
+                    cell = gtk.CellRendererText()
+                    self._fields[key].pack_start(cell)
+                    self._fields[key].add_attribute(cell, 'text', 0)
+                    store = gtk.ListStore(gobject.TYPE_STRING)
+                    for lk in template["Fields"][key]:
+                        store.append([lk])
+                    self._fields[key].set_model(store)
                     self.grid.attach(self._fields[key], 1, 2, i, i+1)
 
                 i += 1

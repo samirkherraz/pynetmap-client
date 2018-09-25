@@ -38,6 +38,12 @@ class Boot(gtk.Window):
         self.set_position(gtk.WIN_POS_CENTER)
         self.connect("delete_event", gtk.main_quit)
         self.connect("key-press-event", self.on_key_release)
+        self.status_ram = self.render_icon(gtk.STOCK_DIALOG_INFO, 1)
+        self.status_disk = self.render_icon(gtk.STOCK_HARDDISK, 1)
+        self.status_cpu = self.render_icon(gtk.STOCK_EXECUTE, 1)
+        self.status_ok = self.render_icon(gtk.STOCK_OK, 0)
+        self.status_unknown = self.render_icon(gtk.STOCK_EDIT, 1)
+        self.status_stop = self.render_icon(gtk.STOCK_STOP, 1)
 
     def open_terminal(self, _o):
         k = self.store.head()
@@ -48,7 +54,7 @@ class Boot(gtk.Window):
 
     def build(self):
 
-        self.treeStore = gtk.TreeStore(str, str)
+        self.treeStore = gtk.TreeStore(str, str, gtk.gdk.Pixbuf)
         self.tree = gtk.TreeView(self.treeStore)
 
         self.canvas = gtk.DrawingArea()
@@ -75,6 +81,11 @@ class Boot(gtk.Window):
         cell = gtk.CellRendererText()
         tvcolumn.pack_start(cell, True)
         tvcolumn.add_attribute(cell, 'text', 1)
+        tvcolumn = gtk.TreeViewColumn('Status')
+        self.tree.append_column(tvcolumn)
+        cell = gtk.CellRendererPixbuf()
+        tvcolumn.pack_start(cell, True)
+        tvcolumn.add_attribute(cell, 'pixbuf', 2)
         toolbar = gtk.Toolbar()
         toolbar.set_style(gtk.TOOLBAR_ICONS)
         vBox = gtk.VBox(False, 2)
@@ -113,7 +124,7 @@ class Boot(gtk.Window):
 
         vBox.pack_start(toolbar, False, False, 0)
         hBox = gtk.HPaned()
-        hBox.set_position(200)
+        hBox.set_position(300)
         swin = gtk.ScrolledWindow()
         swin.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         swin.add_with_viewport(self.tree)
@@ -303,9 +314,42 @@ class Boot(gtk.Window):
     def populate(self, lst, parent=None):
         for key in lst.keys():
             store = lst[key]
+            alert = self.check_status(store)
             row = self.treeStore.append(
-                parent, [key, store["__ID__"]])
+                parent, [key, store["__ID__"], alert])
             self.populate(store["__CHILDREN__"], row)
+
+    def check_status(self, elm):
+
+        try:
+            if elm["Status"] != "running":
+                return self.status_stop
+        except:
+            """ not concernet """
+            return self.status_ok
+
+        try:
+            if elm["__SSH__"] == "No":
+                return self.status_unknown
+        except:
+            return self.status_unknown
+        try:
+            if float(elm["Disk"][len(elm["Disk"])-1].replace("[^0-9.]+", "")) > 90:
+                return self.status_disk
+        except:
+            pass
+        try:
+            if float(elm["CPU Usage"][len(elm["CPU Usage"])-1].replace("[^0-9.]+", "")) > 90:
+                return self.status_cpu
+        except:
+            pass
+        try:
+            if float(elm["Memory"][len(elm["Memory"])-1].replace("[^0-9.]+", "")) > 90:
+                return self.status_ram
+        except:
+            pass
+
+        return self.status_ok
 
     def draw(self, elm):
         if len(elm) > 0:
