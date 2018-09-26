@@ -1,4 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+__author__ = 'Samir KHERRAZ'
+__copyright__ = '(c) Samir HERRAZ 2018-2018'
+__version__ = '1.1.0'
+__licence__ = 'GPLv3'
+
 import os
 import gobject
 gobject.threads_init()
@@ -71,7 +76,7 @@ class Boot(gtk.Window):
 
             except:
                 pass
-            self._stop.wait(15)
+            self._stop.wait(int(self.config.get("refresh")))
 
     def open_terminal(self, _=None):
 
@@ -253,10 +258,10 @@ class Boot(gtk.Window):
                 key = keys[0]
             else:
                 return False
-            if self.search_function(key):
+            if self.search_function(key, [0]):
                 self.selection_changed(None)
 
-    def search_function(self, key, path=[0]):
+    def search_function(self, key, path):
 
         while True:
             npath = ':'.join(str(x) for x in path)
@@ -292,7 +297,7 @@ class Boot(gtk.Window):
         self.populate()
         self.tree.expand_all()
         if len(self.selection) > 0:
-            if self.search_function(self.selection[0]):
+            if self.search_function(self.selection[0], [0]):
                 self.selection_changed(None)
 
     def refresh(self):
@@ -466,9 +471,9 @@ class Boot(gtk.Window):
         self.terminalbox = Terminal(self)
         self.prepare()
         self.build()
-        self.show_all()
         self.runner = Thread(target=self.server_refresh)
         self.runner.start()
+        self.show_all()
 
     def on_key_release(self, widget, ev, data=None):
         if gtk.gdk.keyval_name(ev.keyval) == "Escape":

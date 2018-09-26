@@ -1,4 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+__author__ = 'Samir KHERRAZ'
+__copyright__ = '(c) Samir HERRAZ 2018-2018'
+__version__ = '1.1.0'
+__licence__ = 'GPLv3'
+
 from threading import Lock
 from table import Table
 
@@ -12,6 +17,8 @@ class Database:
         self.register_table("schema")
         self.register_table("structure")
         self.register_table("base")
+        self.register_table("alert")
+        self.register_table("module")
 
     def refresh(self):
         with self.lock:
@@ -33,11 +40,8 @@ class Database:
             return self.api.get_table(name)
 
     def set_table(self, name, data):
-        try:
-            self.tables[name].set_data(data)
-            self.api.set_table(name, data)
-        except:
-            self.api.set_table(name, data)
+        self.api.set_table(name, data)
+        self.refresh()
 
     def create(self, parent_id=None, newid=None):
         return self.api.create(parent_id, newid)
@@ -49,18 +53,13 @@ class Database:
             return self.api.get(table, key)
 
     def set(self, table, key, value):
-        try:
-            self.tables[table].set(key, value)
-            self.api.set(table, key, value)
-        except:
-            self.api.set(table, key, value)
+        self.api.set(table, key, value)
+        self.refresh()
 
     def set_attr(self, table, id, key, value):
-        try:
-            self.tables[table].set_attr(id, key, value)
-            self.api.set_attr(table, id, key, value)
-        except:
-            self.api.set_attr(table, id, key, value)
+
+        self.api.set_attr(table, id, key, value)
+        self.refresh()
 
     def get_attr(self, table, id, key):
         try:
@@ -76,17 +75,60 @@ class Database:
         self.api.move(id, newparent)
         self.refresh()
 
-    def get_children(self, id):
-        return self.api.find_children(id)
+    def get_children(self, id, lst=None):
+        if lst == None:
+            lst = self.tables["structure"].get_data()
+
+        for key in lst.keys():
+            if key == id:
+                return lst[key]
+            else:
+                out = self.get_children(id, lst[key])
+                if out != None:
+                    return out
+
+        return None
 
     def find_by_attr(self,  id, attr=None):
-        return self.api.find_children(id, attr)
+        out = []
+        for key in self.get_table("base"):
+            if attr != None:
+                if str(self.tables["base"].get(key)[attr]).upper() == str(id).upper():
+                    out.append(key)
+            for value in self.tables["base"].get(key):
+                if str(self.tables["base"].get(key)[value]).upper() == str(id).upper():
+                    out.append(key)
+        return out
 
-    def find_by_schema(self, value):
-        return self.api.find_schema(value)
+    def find_by_schema(self, schema):
+        out = []
+        for key in self.get_table("base"):
+            if str(self.tables["base"].get(key)["base.core.schema"]).upper() == str(schema).upper():
+                out.append(key)
 
-    def find_parent(self, id):
-        return self.api.find_parent(id)
+        return out
 
-    def find_path(self, id):
-        return self.api.find_path(id)
+    def find_parent(self, id, lst=None):
+        try:
+            path = self.find_path(id)
+            return path[len(path)-2]
+        except:
+            return None
+
+    def find_path(self, id, lst=None):
+        out = []
+        if lst == None:
+            lst = self.tables["structure"].get_data()
+
+        for key in lst.keys():
+            key = str(key)
+            if key == id:
+                out.append(id)
+                return out
+            else:
+                res = self.find_path(id, lst[key])
+                if len(res) > 0:
+                    out.append(key)
+                    out += res
+
+        return out
