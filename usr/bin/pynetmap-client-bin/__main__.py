@@ -76,7 +76,7 @@ class Boot(gtk.Window):
 
             except:
                 pass
-            self._stop.wait(self.config.get("refresh"))
+            self._stop.wait(int(self.config.get("refresh")))
 
     def open_terminal(self, _=None):
 
@@ -258,10 +258,10 @@ class Boot(gtk.Window):
                 key = keys[0]
             else:
                 return False
-            if self.search_function(key):
+            if self.search_function(key, [0]):
                 self.selection_changed(None)
 
-    def search_function(self, key, path=[0]):
+    def search_function(self, key, path):
 
         while True:
             npath = ':'.join(str(x) for x in path)
@@ -297,7 +297,7 @@ class Boot(gtk.Window):
         self.populate()
         self.tree.expand_all()
         if len(self.selection) > 0:
-            if self.search_function(self.selection[0]):
+            if self.search_function(self.selection[0], [0]):
                 self.selection_changed(None)
 
     def refresh(self):

@@ -27,7 +27,7 @@ class ConfigStore():
         result = cfg.run()
         if result == gtk.RESPONSE_OK:
             for (k, _) in self.configuration.items("GLOBAL"):
-                self.set(k, cfg.set_field(k))
+                self.set(k, cfg.get_field(k))
             self.write()
         cfg.destroy()
 
