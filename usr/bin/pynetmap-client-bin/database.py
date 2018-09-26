@@ -1,4 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+__author__ = 'Samir KHERRAZ'
+__copyright__ = '(c) Samir HERRAZ 2018-2018'
+__version__ = '1.1.0'
+__licence__ = 'GPLv3'
+
 from threading import Lock
 from table import Table
 
@@ -12,6 +17,8 @@ class Database:
         self.register_table("schema")
         self.register_table("structure")
         self.register_table("base")
+        self.register_table("alert")
+        self.register_table("module")
 
     def refresh(self):
         with self.lock:
@@ -33,11 +40,8 @@ class Database:
             return self.api.get_table(name)
 
     def set_table(self, name, data):
-        try:
-            self.tables[name].set_data(data)
-            self.api.set_table(name, data)
-        except:
-            self.api.set_table(name, data)
+        self.api.set_table(name, data)
+        self.refresh()
 
     def create(self, parent_id=None, newid=None):
         return self.api.create(parent_id, newid)
@@ -49,18 +53,13 @@ class Database:
             return self.api.get(table, key)
 
     def set(self, table, key, value):
-        try:
-            self.tables[table].set(key, value)
-            self.api.set(table, key, value)
-        except:
-            self.api.set(table, key, value)
+        self.api.set(table, key, value)
+        self.refresh()
 
     def set_attr(self, table, id, key, value):
-        try:
-            self.tables[table].set_attr(id, key, value)
-            self.api.set_attr(table, id, key, value)
-        except:
-            self.api.set_attr(table, id, key, value)
+
+        self.api.set_attr(table, id, key, value)
+        self.refresh()
 
     def get_attr(self, table, id, key):
         try:

@@ -1,4 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+__author__ = 'Samir KHERRAZ'
+__copyright__ = '(c) Samir HERRAZ 2018-2018'
+__version__ = '1.1.0'
+__licence__ = 'GPLv3'
+
 import os
 import gobject
 gobject.threads_init()
@@ -71,7 +76,7 @@ class Boot(gtk.Window):
 
             except:
                 pass
-            self._stop.wait(15)
+            self._stop.wait(self.config.get("refresh"))
 
     def open_terminal(self, _=None):
 
@@ -466,9 +471,9 @@ class Boot(gtk.Window):
         self.terminalbox = Terminal(self)
         self.prepare()
         self.build()
-        self.show_all()
         self.runner = Thread(target=self.server_refresh)
         self.runner.start()
+        self.show_all()
 
     def on_key_release(self, widget, ev, data=None):
         if gtk.gdk.keyval_name(ev.keyval) == "Escape":
