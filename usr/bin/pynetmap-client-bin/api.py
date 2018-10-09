@@ -9,6 +9,7 @@ import requests
 import json
 import hashlib
 from dialog import Notify
+from threading import Thread
 
 
 class API:
@@ -17,13 +18,11 @@ class API:
         self.last_update = -1
         self.cookies = None
         self.session = requests.Session()
-        self.session.verify = False
+        self.session.verify = True
         self.reset()
 
     def reset(self):
-        self.url = "http://" + \
-            self.ui.config.get("ServerIP")+":" + \
-            self.ui.config.get("ServerPort")+"/"
+        self.url = self.ui.config.get("server")+"/"
 
     def tunnel_relaod(self):
         self.session.post(self.url+"core/tunnel/reload",
@@ -37,7 +36,7 @@ class API:
 
     def is_server_online(self):
         try:
-            self.session.post(self.url, timeout=5)
+            self.session.post(self.url, timeout=1)
             return True
         except:
             return False
@@ -45,7 +44,6 @@ class API:
     def get_access(self, prop):
         t = self.session.post(self.url+"core/auth/access/"+prop,
                               cookies=self.cookies).json()
-        print t["AUTHORIZATION"]
         return t["AUTHORIZATION"]
 
     def auth(self):
@@ -187,6 +185,7 @@ class API:
                           cookies=self.cookies)
 
     def set_attr(self, table, id, attr, store):
+
         self.session.post(self.url+"core/data/set/"+table+"/"+id+"/"+attr, json=json.dumps(store),
                           cookies=self.cookies)
 

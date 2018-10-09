@@ -12,6 +12,7 @@ from subprocess import Popen
 import threading
 import socket
 import select
+from urlparse import urlparse
 
 
 class Terminal:
@@ -21,6 +22,7 @@ class Terminal:
         self.terminals_hope = dict()
         self.ui = ui
 
+    def reload_access(self):
         if self.ui.api.get_access("users.privilege.terminal"):
             self.sshuser = self.ui.api.get("server", "server.ssh.user")
             self.sshpassword = self.ui.api.get("server", "server.ssh.password")
@@ -94,10 +96,9 @@ class Terminal:
 
     def build_cmd(self, key):
         try:
-            elm = self.ui.store.get("base", key)
             cmd = TERMINAL
-            cmd = cmd.replace("[ServerIP]", str(
-                self.ui.config.get("ServerIP")).strip())
+            cmd = cmd.replace("[Server]", str(
+                urlparse(self.ui.config.get("server")).hostname))
             cmd = cmd.replace("[SSHUsername]", self.sshuser)
             cmd = cmd.replace("[SSHPassword]",
                               self.sshpassword.replace("!", "\\!").strip())
@@ -127,12 +128,13 @@ class Terminal:
                 del self.terminals[key]
                 self.terminals_prc[key].kill()
                 del self.terminals_prc[key]
-
+        self.reload_access()
         if id not in self.terminals.keys() or self.terminals[id] == None:
             self.terminals[id] = self.build(id)
         return self.terminals[id]
 
     def external(self, key):
+        self.reload_access()
         cmd = self.build_cmd(key)
         if cmd != None:
             os.system(str(self.ui.config.get("TerminalCommand")

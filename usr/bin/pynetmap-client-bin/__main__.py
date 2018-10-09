@@ -426,6 +426,20 @@ class Boot(gtk.Window):
                     self.dashStore.prepend(
                         ["#d03d3c", self.status_icons[lkey], self.store.get_attr("base", key, "base.name"), str(alerts[key][lkey]["content"])])
                     fatal += 1
+                    if key not in self.alerts:
+                        self.alerts[key] = dict()
+                    if lkey not in self.alerts[key]:
+                        Notify(self.store.get_attr("base", key, "base.name"),
+                               str(alerts[key][lkey]["content"]))
+                        self.alerts[key][lkey] = True
+        for key in self.alerts.keys():
+            if key not in alerts:
+                del self.alerts[key]
+            else:
+                for lkey in self.alerts[key].keys():
+                    if lkey not in alerts[key]:
+                        del self.alerts[key][lkey]
+
         self.dashTitle.set_text(self.lang.get(
             "gtk.notebook.dash.title").replace("$value", str(fatal)))
         self.dash.show_all()
@@ -461,6 +475,7 @@ class Boot(gtk.Window):
     def __init__(self):
         super(Boot, self).__init__()
         self._stop = Event()
+        self.alerts = dict()
         self.lang = LangStore(self)
         self.lang.read()
         self.config = ConfigStore(self)
@@ -483,7 +498,7 @@ class Boot(gtk.Window):
         self.selection_changed(None)
 
     def export(self, _):
-        Export(self.store)
+        Export(self)
 
     def exit(self):
         self._stop.set()
@@ -496,7 +511,7 @@ class Boot(gtk.Window):
                 self.config.check()
                 self.api.reset()
             try:
-                self.auth_gui(None)
+                self.auth_gui()
             except:
                 Error(self,  self.lang.get("gtk.serverdown.dialog.text"))
                 exit(0)
@@ -506,7 +521,7 @@ class Boot(gtk.Window):
                 if not auth:
                     exit(0)
 
-    def auth_gui(self, _):
+    def auth_gui(self):
         if not self.api.auth_check():
             u = Ask(None, self.lang.get("gtk.login.dialog.title"),
                     self.lang.get("gtk.login.dialog.username"))
