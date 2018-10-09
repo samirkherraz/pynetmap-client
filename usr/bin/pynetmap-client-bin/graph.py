@@ -38,7 +38,7 @@ class Graph:
         os.system("dot -T"+self.format +
                   " /tmp/pynetmap/graph.dot -o  /tmp/pynetmap/graph."+self.format + "; exit")
         r = gtk.gdk.pixbuf_new_from_file("/tmp/pynetmap/graph."+self.format)
-        # os.system("rm /tmp/pynetmap/*")
+        os.system("rm /tmp/pynetmap/*")
         return r
 
     def node(self, key, detailed, lvl=0):
@@ -103,6 +103,10 @@ class Graph:
             tblhistoryb = False
             tblbaseb = False
             tbllistb = False
+
+            for k in table:
+                table[k].sort()
+
             # History
             tblhistory = "<TABLE border='0' cellborder='0' cellspacing='5'>"
             for k in table["history"]:

@@ -23,9 +23,57 @@ from const import NAME, VERSION
 from configstore import ConfigStore
 from langstore import LangStore
 """ ameliorer search"""
+class TrayIcon(gtk.StatusIcon):
+    def __init__(self, main):
+        gtk.StatusIcon.__init__(self)
+        self.main = main
+        pixbuf = gtk.gdk.pixbuf_new_from_file_at_size("/usr/share/pynetmap/icon.png",48,48)
+        self.set_from_pixbuf(pixbuf)
+        self.set_tooltip('PyNetMap')
+        self.set_visible(True)
 
+        self.menu = menu = gtk.Menu()
+
+        reload_item = gtk.MenuItem("Reload")
+        reload_item.connect("activate", self.reload)
+        menu.append(reload_item)
+
+        window_item = gtk.MenuItem("Show Window")
+        window_item.connect("activate", self.show_window)
+        menu.append(window_item)
+
+        quit_item = gtk.MenuItem("Quit")
+        quit_item.connect("activate", self.quit)
+        menu.append(quit_item)
+
+        menu.show_all()
+
+        self.connect("activate", self.show_window)
+        self.connect('popup-menu', self.icon_clicked)
+
+    def show_window(self, widget, event=None):
+        self.main.present()    
+
+    def icon_clicked(self, status, button, time):
+        self.menu.popup(None, None, None, button, time)
+
+    def reload(self, widget,event=None):
+        self.main.refresh()
+
+    def quit(self, widget, event=None):
+        self.main.hide()
+        self.main.exit()
+        gtk.main_quit()
 
 class Boot(gtk.Window):
+
+
+    
+    def on_delete_event(self, widget, event):
+        self.hide()
+        return True    
+
+
 
     def prepare(self):
         self.gtk_threading_lock = Lock()
@@ -43,8 +91,12 @@ class Boot(gtk.Window):
         self.set_title(NAME + " - " + VERSION)
         self.set_default_size(1000, 600)
         self.set_position(gtk.WIN_POS_CENTER)
-        self.connect("delete_event", gtk.main_quit)
+        self.connect("delete_event", self.on_delete_event)
         self.connect("key-press-event", self.on_key_release)
+
+        self.tray = TrayIcon(self)
+
+
         self.status_icons = dict()
         self.status_icons["alert.memory"] = self.render_icon(
             gtk.STOCK_DIALOG_INFO, 1)
@@ -98,6 +150,9 @@ class Boot(gtk.Window):
             self.terminal.show_all()
 
     def build(self):
+
+
+
         self.dashStore = gtk.ListStore(str, gtk.gdk.Pixbuf, str, str)
         self.dash = gtk.TreeView(self.dashStore)
         self.dash.set_grid_lines(True)
@@ -249,7 +304,7 @@ class Boot(gtk.Window):
         self.config.check()
         self.api.reset()
 
-    def search(self, elm):
+    def search(self, e=None):
         res = Ask(self, self.lang.get("gtk.search.dialog.title"),
                   self.lang.get("gtk.search.dialog.text"))
         if res.is_ok():
@@ -417,6 +472,8 @@ class Boot(gtk.Window):
         alerts = self.store.get_table("alert")
         self.dashStore.clear()
         fatal = 0
+        msg = ""
+        notif = False
         for key in alerts:
             for lkey in alerts[key]:
                 if alerts[key][lkey]["severity"] == 0:
@@ -429,9 +486,13 @@ class Boot(gtk.Window):
                     if key not in self.alerts:
                         self.alerts[key] = dict()
                     if lkey not in self.alerts[key]:
-                        Notify(self.store.get_attr("base", key, "base.name"),
-                               str(alerts[key][lkey]["content"]))
+                        msg += self.store.get_attr("base", key, "base.name")
+                        msg += " : " + str(alerts[key][lkey]["content"])
+                        msg += "\n"
+                        notif = True
                         self.alerts[key][lkey] = True
+        if notif:
+            Notify("Alerts", msg)
         for key in self.alerts.keys():
             if key not in alerts:
                 del self.alerts[key]
@@ -490,9 +551,28 @@ class Boot(gtk.Window):
         self.runner.start()
         self.show_all()
 
-    def on_key_release(self, widget, ev, data=None):
-        if gtk.gdk.keyval_name(ev.keyval) == "Escape":
-            self.exit()
+    def on_key_release(self, widget, event, data=None):
+        keyval = event.keyval
+        keyval_name = gtk.gdk.keyval_name(keyval)
+        state = event.state
+        ctrl = (state & gtk.gdk.CONTROL_MASK)
+        if ctrl and keyval_name == 'f':
+            self.search()
+        elif ctrl and keyval_name == 't':
+            self.open_terminal()
+        elif ctrl and keyval_name == 'q':
+            self.tray.quit(None)
+        elif ctrl and keyval_name == 'r':
+            self.refresh()
+        elif ctrl and keyval_name == 'Left':
+            self.notebook.prev_page()
+        elif ctrl and keyval_name == 'Right':
+            self.notebook.next_page()
+        elif keyval_name == 'Escape':
+            self.hide()
+        else:
+            return False
+        return True
 
     def graph_update(self):
         self.selection_changed(None)
