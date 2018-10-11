@@ -4,7 +4,7 @@ __copyright__ = '(c) Samir HERRAZ 2018-2018'
 __version__ = '1.1.0'
 __licence__ = 'GPLv3'
 
-from threading import Lock
+from threading import Thread, Lock
 from table import Table
 
 
@@ -14,11 +14,11 @@ class Database:
         self.tables = dict()
         self.ui = ui
         self.api = self.ui.api
-        self.register_table("schema")
-        self.register_table("structure")
-        self.register_table("base")
-        self.register_table("alert")
-        self.register_table("module")
+        self.register_table("schema", True)
+        self.register_table("structure", False)
+        self.register_table("base", False)
+        self.register_table("alert", False)
+        self.register_table("module", False)
 
     def refresh(self):
         with self.lock:
@@ -29,9 +29,10 @@ class Database:
     def cleanup(self):
         self.api.cleanup()
 
-    def register_table(self, name):
+    def register_table(self, name, loadNow):
         self.tables[name] = Table(name)
-        self.tables[name].set_data(self.api.get_table(name))
+        if loadNow:
+            self.tables[name].set_data(self.api.get_table(name))
 
     def get_table(self, name):
         try:
@@ -40,8 +41,10 @@ class Database:
             return self.api.get_table(name)
 
     def set_table(self, name, data):
-        self.api.set_table(name, data)
-        self.refresh()
+        t = Thread(target=self.api.set_table, args=(name, data))
+        t.daemon = True
+        t.start()
+        #self.api.set_table(name, data)
 
     def create(self, parent_id=None, newid=None):
         return self.api.create(parent_id, newid)
@@ -53,13 +56,14 @@ class Database:
             return self.api.get(table, key)
 
     def set(self, table, key, value):
-        self.api.set(table, key, value)
-        self.refresh()
+        t = Thread(target=self.api.set, args=(table, key, value))
+        t.daemon = True
+        t.start()
 
     def set_attr(self, table, id, key, value):
-
-        self.api.set_attr(table, id, key, value)
-        self.refresh()
+        t = Thread(target=self.api.set_attr, args=(table, id, key, value))
+        t.daemon = True
+        t.start()
 
     def get_attr(self, table, id, key):
         try:
@@ -68,12 +72,16 @@ class Database:
             return self.api.get_attr(table, id, key)
 
     def delete(self, parent_id, newid):
-        self.api.delete(parent_id, newid)
-        self.refresh()
+        t = Thread(target=self.api.delete, args=(parent_id, newid))
+        t.daemon = True
+        t.start()
+        #self.api.delete(parent_id, newid)
 
     def move(self, id, newparent):
-        self.api.move(id, newparent)
-        self.refresh()
+        t = Thread(target=self.api.move, args=(id, newparent))
+        t.daemon = True
+        t.start()
+        #self.api.move(id, newparent)
 
     def get_children(self, id, lst=None):
         if lst == None:
