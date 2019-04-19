@@ -5,11 +5,13 @@ __version__ = '1.1.0'
 __licence__ = 'GPLv3'
 
 import ConfigParser
-from dialog import Config
 import os
-import gtk
 from shutil import copyfile
+
+import gtk
+
 from const import CONFIG_PATH
+from dialog import Config
 
 
 class ConfigStore():

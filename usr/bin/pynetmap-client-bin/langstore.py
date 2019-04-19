@@ -5,6 +5,7 @@ __version__ = '1.1.0'
 __licence__ = 'GPLv3'
 
 import ConfigParser
+
 from const import CONFIG_PATH
 
 

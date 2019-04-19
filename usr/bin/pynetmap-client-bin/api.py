@@ -5,11 +5,13 @@ __version__ = '1.1.0'
 __licence__ = 'GPLv3'
 
 
-import requests
-import json
 import hashlib
-from dialog import Notify
+import json
 from threading import Thread
+
+import requests
+
+from dialog import Notify
 
 
 class API:
@@ -38,17 +40,18 @@ class API:
         try:
             self.session.post(self.url, timeout=1)
             return True
-        except:
+        except ValueError as e:
+            print(e)
             return False
 
     def get_access(self, prop):
         t = self.session.post(self.url+"core/auth/access/"+prop,
-                              cookies=self.cookies).json()
+                              cookies=self.cookies).json()["content"]
         return t["AUTHORIZATION"]
 
     def auth(self):
         t = self.session.post(self.url+"core/auth/login",
-                              json=json.dumps(self.d)).json()
+                              json=json.dumps(self.d)).json()["content"]
         if t["TOKEN"] != None:
             self.cookies = {"TOKEN": t["TOKEN"],
                             "USERNAME": self.d["username"]}
@@ -63,7 +66,8 @@ class API:
     def auth_check(self):
 
         t = self.session.post(self.url+"core/auth/check",
-                              cookies=self.cookies).json()
+                              cookies=self.cookies).json()["content"]
+        print(t)
         try:
             return t["AUTHORIZATION"]
         except:
@@ -71,7 +75,7 @@ class API:
 
     def get_table(self, table):
         data = self.session.post(self.url+"core/data/get/"+table,
-                                 cookies=self.cookies).json()
+                                 cookies=self.cookies).json()["content"]
         try:
             if not data["AUTHORIZATION"]:
                 return None
@@ -80,7 +84,7 @@ class API:
 
     def get(self, table, id):
         data = self.session.post(self.url+"core/data/get/"+table+"/"+id,
-                                 cookies=self.cookies).json()
+                                 cookies=self.cookies).json()["content"]
         try:
             if not data["AUTHORIZATION"]:
                 return None
@@ -93,7 +97,7 @@ class API:
 
     def get_attr(self, table, id, attr):
         data = self.session.post(self.url+"core/data/get/"+table+"/"+id+"/"+attr,
-                                 cookies=self.cookies).json()
+                                 cookies=self.cookies).json()["content"]
         try:
             if not data["AUTHORIZATION"]:
                 return None
@@ -107,7 +111,7 @@ class API:
             url = self.url+"core/data/find/attr/"+value
 
         data = self.session.post(url,
-                                 cookies=self.cookies).json()
+                                 cookies=self.cookies).json()["content"]
         try:
             if not data["AUTHORIZATION"]:
                 return None
@@ -116,7 +120,7 @@ class API:
 
     def find_schema(self, value):
         data = self.session.post(self.url+"core/data/find/schema/"+value,
-                                 cookies=self.cookies).json()
+                                 cookies=self.cookies).json()["content"]
         try:
             if not data["AUTHORIZATION"]:
                 return None
@@ -125,7 +129,7 @@ class API:
 
     def find_path(self, value):
         data = self.session.post(self.url+"core/data/find/path/"+value,
-                                 cookies=self.cookies).json()
+                                 cookies=self.cookies).json()["content"]
         try:
             if not data["AUTHORIZATION"]:
                 return None
@@ -134,7 +138,7 @@ class API:
 
     def find_children(self, value):
         data = self.session.post(self.url+"core/data/find/children/"+value,
-                                 cookies=self.cookies).json()
+                                 cookies=self.cookies).json()["content"]
         try:
             if not data["AUTHORIZATION"]:
                 return None
@@ -143,7 +147,7 @@ class API:
 
     def find_parent(self, value):
         data = self.session.post(self.url+"core/data/find/parent/"+value,
-                                 cookies=self.cookies).json()
+                                 cookies=self.cookies).json()["content"]
         try:
             if not data["AUTHORIZATION"]:
                 return None
@@ -161,7 +165,7 @@ class API:
             url = self.url+"core/data/create/"
 
         data = self.session.post(url,
-                                 cookies=self.cookies).json()
+                                 cookies=self.cookies).json()["content"]
         try:
             if not data["AUTHORIZATION"]:
                 return None

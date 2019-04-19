@@ -5,14 +5,16 @@ __version__ = '1.1.0'
 __licence__ = 'GPLv3'
 
 import os
-from const import TERMINAL
-import vte
-import gtk
-from subprocess import Popen
-import threading
-import socket
 import select
+import socket
+import threading
+from subprocess import Popen
 from urlparse import urlparse
+
+import gtk
+
+import vte
+from const import TERMINAL
 
 
 class Terminal:

@@ -5,9 +5,10 @@ __version__ = '1.1.0'
 __licence__ = 'GPLv3'
 
 import os
-import gtk
 import time
-from datetime import timedelta
+from datetime import datetime, timedelta
+from const import *
+import gtk
 
 
 class Graph:
@@ -38,26 +39,26 @@ class Graph:
         os.system("dot -T"+self.format +
                   " /tmp/pynetmap/graph.dot -o  /tmp/pynetmap/graph."+self.format + "; exit")
         r = gtk.gdk.pixbuf_new_from_file("/tmp/pynetmap/graph."+self.format)
-        os.system("rm /tmp/pynetmap/*")
+        #os.system("rm /tmp/pynetmap/*")
         return r
 
     def node(self, key, detailed, lvl=0):
 
         vmstate = self.store.get_attr(
-            "module", key, "module.state.status")
+            "module", key, KEY_STATUS)
 
         vmicon = self.store.get_attr(
-            "schema", self.store.get_attr("base", key, "base.core.schema"), "Icon")
+            "schema", self.store.get_attr("base", key, KEY_TYPE), "Icon")
 
-        vmname = self.store.get_attr("base", key, "base.name")
+        vmname = self.store.get_attr("base", key, KEY_NAME)
 
         icon = vmicon+".png"
         try:
-            if vmstate == "running":
+            if vmstate == RUNNING_STATUS:
                 icon = vmicon+"_running.png"
-            elif vmstate == "stopped":
+            elif vmstate == STOPPED_STATUS:
                 icon = vmicon+"_stopped.png"
-            elif vmstate == "unknown":
+            elif vmstate == UNKNOWN_STATUS:
                 icon = vmicon+"_unknown.png"
         except:
             pass
@@ -71,17 +72,15 @@ class Graph:
         s += "<TR><TD port='IMG' colspan='2'><IMG SRC='"+icon+"' /></TD></TR>"
         s += "<TR><TD colspan='2' ><b>" + vmname+"</b></TD></TR>"
         if detailed:
-            vmfields = self.store.get_attr(
-                "schema", self.store.get_attr("base", key, "base.core.schema"), "Fields")
+            vmfields = self.store.get(
+                "schema", self.store.get_attr("base", key, KEY_TYPE))["Fields"]
+            
             info = self.store.get("module", key)
             table = dict()
-            table["history"] = []
-            table["list"] = []
             table["base"] = []
             table["baseinfo"] = []
             table["basemultiline"] = []
             for k in self.store.get("base", key).keys():
-                if (not k.startswith("base.core")) and (self.store.get_attr("base", key, k) != ""):
                     if k in vmfields.keys() and vmfields[k] == "LONG":
                         table["basemultiline"].append(k)
                     else:
@@ -89,15 +88,9 @@ class Graph:
 
             try:
                 for k in info.keys():
-                    if (info[k] != ""):
-                        if k.startswith("module.state.history"):
-                            table["history"].append(k)
-                        elif k.startswith("module.state.list"):
-                            table["list"].append(k)
-                        elif k.startswith("module."):
-                            table["baseinfo"].append(k)
-                        else:
-                            pass
+                    if (info[k] != "" and type(info[k]) == str):
+                       table["baseinfo"].append(k)
+                        
             except:
                 pass
             tblhistoryb = False
@@ -109,16 +102,14 @@ class Graph:
 
             # History
             tblhistory = "<TABLE border='0' cellborder='0' cellspacing='5'>"
-            for k in table["history"]:
-                name = (vmname+k+".png").replace(" ", "").lower()
-                if k == "module.state.history.status":
-                    self.subgraph(info[k], name, self.ui.lang.get(k), True)
-                else:
-                    self.subgraph(info[k], name, self.ui.lang.get(k))
-
-                tblhistory += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><IMG SRC='/tmp/pynetmap/" + \
-                    name+"' /></TD></TR>"
-                tblhistoryb = True
+            if KEY_MONITOR_HISTORY in info:
+                for k in info[KEY_MONITOR_HISTORY]:
+                    
+                    name = (vmname+k+".png").replace(" ", "").lower()
+                    self.subgraph(info[KEY_MONITOR_HISTORY][k], name, self.ui.lang.get(k), (k == KEY_STATUS) )
+                    tblhistory += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><IMG SRC='/tmp/pynetmap/" + \
+                        name+"' /></TD></TR>"
+                    tblhistoryb = True
             tblhistory += "</TABLE>"
             # Base
             tblbase = "<TABLE border='0' cellborder='0' cellspacing='5'>"
@@ -132,7 +123,7 @@ class Graph:
                     "</B></TD><TD VALIGN='TOP' ALIGN='LEFT'>"+rst + "</TD></TR>"
                 tblbaseb = True
             for k in table["baseinfo"]:
-                if k == "module.state.lastupdate":
+                if k == KEY_LAST_UPDATE:
                     rst = "-" + \
                         str(timedelta(seconds=int(time.time() - info[k])))
                 else:
@@ -152,23 +143,24 @@ class Graph:
 
             # List
             tbllist = "<TABLE border='0' cellborder='0' cellspacing='5'>"
-            for k in table["list"]:
-                rst = info[k]
-                if len(rst) > 0:
-                    tbllist += "<TR><TD VALIGN='TOP' ALIGN='LEFT'>"
+            if KEY_MONITOR_LISTS in info:
+                for k in info[KEY_MONITOR_LISTS]:
+                    rst = info[KEY_MONITOR_LISTS][k]
+                    if len(rst) > 0:
+                        tbllist += "<TR><TD VALIGN='TOP' ALIGN='LEFT'>"
 
-                    tbllist += "<TABLE border='0' cellborder='0' cellspacing='5'><TR><TD ALIGN='LEFT'><B><U>" + \
-                        self.ui.lang.get(k)+"</U></B></TD></TR>"
+                        tbllist += "<TABLE border='0' cellborder='0' cellspacing='5'><TR><TD ALIGN='LEFT'><B><U>" + \
+                            self.ui.lang.get(k)+"</U></B></TD></TR>"
 
-                    for l in rst:
-                        tbllist += "<TR>"
-                        for d in l.keys():
-                            tbllist += "<TD VALIGN='TOP' ALIGN='LEFT'>" + \
-                                l[d].strip()+"</TD>"
-                        tbllist += "</TR>"
-                    tbllist += "</TABLE>"
-                    tbllist += "</TD></TR>"
-                    tbllistb = True
+                        for l in rst:
+                            tbllist += "<TR>"
+                            for d in l.keys():
+                                tbllist += "<TD VALIGN='TOP' ALIGN='LEFT'>" + \
+                                    l[d].strip()+"</TD>"
+                            tbllist += "</TR>"
+                        tbllist += "</TABLE>"
+                        tbllist += "</TD></TR>"
+                        tbllistb = True
             tbllist += "</TABLE>"
 
             if tblhistoryb and tblbaseb:
@@ -185,12 +177,11 @@ class Graph:
         return s
 
     def subgraph(self, list, name, title, bln=False):
-        i = 0
         file = open("/tmp/pynetmap/"+name+".list", "w")
         for e in list:
-            ee = str(e).replace("[^0-9.]+", "").replace("%", "")
-            if ee != "":
-                ee = float(ee)
+            if str(e["value"]) != "":
+                ee = float(e["value"])
+                dd = float(e["date"])
                 if bln:
                     if ee == 100:
                         color = 1
@@ -203,21 +194,32 @@ class Graph:
                         color = 1
                     else:
                         color = 2
+                t = datetime.fromtimestamp(dd)
 
-                file.write(str(i) + "    "+str(ee) +
-                           "    " + str(color) + "\n")
-                i = i+1
+                file.write(str(t.strftime("%Y%m%d%H%M")))
+                file.write(",")
+                file.write(str(e["value"]))
+                file.write(",")
+                file.write(str(color))
+                file.write("\n")
         file.close()
 
         cmd = """gnuplot -e "set terminal png transparent size 800,400 font arial 18;
         set title '"""+title+"""';
+        set datafile separator ',';
         set yrange [0:100];
+        set xdata time;
+        set timefmt '%Y%m%d%H%M';
+        set format x '%H:%M';
+        set xtics rotate by 45 offset -2,-2;
+        set bmargin 3;
+        set grid;
         set palette model RGB maxcolors 3;
         set palette model RGB defined (0 '#999900', 1 '#009900', 2 '#cc0000');
         set cbrange [0:2];
         set nocbtics;
         unset colorbox;
-        plot '/tmp/pynetmap/""" + name+""".list' notitle  with filledcurves above x1 fc palette;" > /tmp/pynetmap/""" + name+""" && rm '/tmp/pynetmap/"""+name+""".list'"""
+        plot '/tmp/pynetmap/""" + name+""".list' using 1:2:3 notitle with filledcurves above x1 fc palette;" > /tmp/pynetmap/""" + name+""" """
         os.system(cmd)
 
     def generate_node_recur(self, key,  detailed, lvl):

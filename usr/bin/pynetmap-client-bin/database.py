@@ -4,7 +4,8 @@ __copyright__ = '(c) Samir HERRAZ 2018-2018'
 __version__ = '1.1.0'
 __licence__ = 'GPLv3'
 
-from threading import Thread, Lock
+from threading import Lock, Thread
+from const import *
 from table import Table
 
 
@@ -111,7 +112,7 @@ class Database:
     def find_by_schema(self, schema):
         out = []
         for key in self.get_table("base"):
-            if str(self.tables["base"].get(key)["base.core.schema"]).upper() == str(schema).upper():
+            if str(self.tables["base"].get(key)[KEY_TYPE]).upper() == str(schema).upper():
                 out.append(key)
 
         return out

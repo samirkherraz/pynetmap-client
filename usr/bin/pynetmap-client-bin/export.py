@@ -5,7 +5,7 @@ __version__ = '1.1.0'
 __licence__ = 'GPLv3'
 
 import os
-
+from const import *
 
 class Export:
     def __init__(self, parent):
@@ -21,9 +21,9 @@ class Export:
     def writeNode(self, key, spc):
         el = self.store.get("base", key)
         s = "\n"
-        s += spc+" "+el["base.core.schema"]+" - "+el["base.name"]+"\n"
-        hidden = ["base.ssh.password", "base.core.schema", "base.name", "base.ssh.user", "base.ssh.port",
-                  "base.tunnel.user", "base.tunnel.password", "base.tunnel.port"]
+        s += spc+" "+el[KEY_TYPE]+" - "+el[KEY_NAME]+"\n"
+        hidden = [KEY_SSH_PASSWORD, KEY_TYPE, KEY_NAME, KEY_SSH_USER, KEY_SSH_PORT,
+                  "tunnel.user", "tunnel.password", "tunnel.port"]
         for key in el:
             if key in hidden:
                 pass

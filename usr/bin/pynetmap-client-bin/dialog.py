@@ -4,9 +4,11 @@ __copyright__ = '(c) Samir HERRAZ 2018-2018'
 __version__ = '1.1.0'
 __licence__ = 'GPLv3'
 
-import gtk
 import gobject
+import gtk
 import notify2
+
+from const import *
 
 try:
     notify2.init("PyNetMAP")
@@ -65,38 +67,38 @@ class Config(gtk.Dialog):
 class Form(gtk.Dialog):
 
     def prepare(self):
-        self._sfields = ["base.core.schema", "parent"]
+        self._sfields = [KEY_TYPE, "parent"]
         self._fields = dict()
         self.set_position(gtk.WIN_POS_CENTER)
         self.set_default_size(600, 400)
 
     def build(self, template=None):
-        self._fields["base.core.schema"] = gtk.ComboBox()
+        self._fields[KEY_TYPE] = gtk.ComboBox()
         cell = gtk.CellRendererText()
-        self._fields["base.core.schema"].pack_start(cell)
-        self._fields["base.core.schema"].add_attribute(cell, 'text', 0)
+        self._fields[KEY_TYPE].pack_start(cell)
+        self._fields[KEY_TYPE].add_attribute(cell, 'text', 0)
 
         store = gtk.ListStore(gobject.TYPE_STRING)
         for key in self.ui.store.get_table("schema"):
             store.append([key])
-        self._fields["base.core.schema"].set_model(store)
-        self._fields["base.core.schema"].connect('changed', self.on_changed)
+        self._fields[KEY_TYPE].set_model(store)
+        self._fields[KEY_TYPE].connect('changed', self.on_changed)
 
         toolbar = gtk.HBox()
-        toolbar.add(self._fields["base.core.schema"])
+        toolbar.add(self._fields[KEY_TYPE])
         self.container = gtk.VBox()
         self.vbox.pack_start(toolbar, False, True, 0)
         swin = gtk.ScrolledWindow()
         swin.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         swin.add_with_viewport(self.container)
         self.vbox.add(swin)
-        self._fields["base.core.schema"].set_active(0)
+        self._fields[KEY_TYPE].set_active(0)
 
     def get_fields(self):
         ret = dict()
         for d in self._fields:
-            if d.startswith("base."):
-                ret[d] = self.get_field(d)
+            # if d.startswith(""):
+            ret[d] = self.get_field(d)
         return ret
 
     def set_field(self, id, value):
@@ -131,7 +133,7 @@ class Form(gtk.Dialog):
             return None
 
     def set_fields(self, data):
-        self.set_field("base.core.schema", data["base.core.schema"])
+        self.set_field(KEY_TYPE, data[KEY_TYPE])
         for d in data:
             if d not in self._sfields and data[d] != None:
                 self.set_field(d, data[d])
@@ -158,7 +160,7 @@ class Form(gtk.Dialog):
                 self._fields["parent"].add_attribute(cell, 'text', 1)
                 for el in elms:
                     store.append(
-                        [el, self.ui.store.get_attr("base", el, "base.name")])
+                        [el, self.ui.store.get_attr("base", el, KEY_NAME)])
                 self._fields["parent"].set_model(store)
                 self._fields["parent"].set_active(0)
 
@@ -222,7 +224,7 @@ class Edit(Form):
         Form.__init__(self, parent.lang.get(
             "gtk.edit.dialog.title"), parent)
         if len(self.ui.selection) > 0:
-            self._fields["base.core.schema"].set_sensitive(False)
+            self._fields[KEY_TYPE].set_sensitive(False)
             self.set_fields(self.ui.store.get("base", self.ui.selection[0]))
             if len(self.ui.selection) > 1:
                 self.set_field("parent", self.ui.selection[1])

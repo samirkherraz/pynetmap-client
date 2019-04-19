@@ -5,23 +5,26 @@ __version__ = '1.1.0'
 __licence__ = 'GPLv3'
 
 import os
-import gobject
-gobject.threads_init()
-import gtk
-gtk.gdk.threads_init()
 import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 import time
-from threading import Lock, Event, Thread
-from database import Database
-from dialog import Edit, Add, Ask, AskConfirmation, Error, Notify
-from graph import Graph
-from terminal import Terminal
+from threading import Event, Lock, Thread
+
+import gobject
+import gtk
+
 from api import API
-from export import Export
-from const import NAME, VERSION
 from configstore import ConfigStore
+from const import *
+from database import Database
+from dialog import Add, Ask, AskConfirmation, Edit, Error, Notify
+from export import Export
+from graph import Graph
 from langstore import LangStore
+from terminal import Terminal
+
+gobject.threads_init()
+gtk.gdk.threads_init()
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 """ ameliorer search"""
 class TrayIcon(gtk.StatusIcon):
     def __init__(self, main):
@@ -361,7 +364,7 @@ class Boot(gtk.Window):
 
     def delete_entry(self, widget):
         r = AskConfirmation(self,  self.lang.get("gtk.delete.dialog.text") +
-                            self.store.get_attr("base", self.selection[0], "base.name"))
+                            self.store.get_attr("base", self.selection[0], KEY_NAME))
         if r.is_ok():
             if len(self.selection) > 1:
                 self.store.delete(self.selection[1], self.selection[0])
@@ -448,7 +451,7 @@ class Boot(gtk.Window):
         for key in lst.keys():
             alert = self.check_status(key)
             row = self.treeStore.append(
-                parent, [key, self.store.get_attr("base", key, "base.name"), alert])
+                parent, [key, self.store.get_attr("base", key, KEY_NAME), alert])
             self.populate(lst[key], row)
 
     def check_status(self, elm):
@@ -478,15 +481,15 @@ class Boot(gtk.Window):
             for lkey in alerts[key]:
                 if alerts[key][lkey]["severity"] == 0:
                     self.dashStore.append(
-                        ["#2396a6", self.status_icons[lkey], self.store.get_attr("base", key, "base.name"), str(alerts[key][lkey]["content"])])
+                        ["#2396a6", self.status_icons[lkey], self.store.get_attr("base", key, KEY_NAME), str(alerts[key][lkey]["content"])])
                 else:
                     self.dashStore.prepend(
-                        ["#d03d3c", self.status_icons[lkey], self.store.get_attr("base", key, "base.name"), str(alerts[key][lkey]["content"])])
+                        ["#d03d3c", self.status_icons[lkey], self.store.get_attr("base", key, KEY_NAME), str(alerts[key][lkey]["content"])])
                     fatal += 1
                     if key not in self.alerts:
                         self.alerts[key] = dict()
                     if lkey not in self.alerts[key]:
-                        msg += self.store.get_attr("base", key, "base.name")
+                        msg += self.store.get_attr("base", key, KEY_NAME)
                         msg += " : " + str(alerts[key][lkey]["content"])
                         msg += "\n"
                         notif = True
