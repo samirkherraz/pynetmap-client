@@ -4,11 +4,11 @@ __copyright__ = '(c) Samir HERRAZ 2018-2018'
 __version__ = '1.1.0'
 __licence__ = 'GPLv3'
 
-import ConfigParser
+import configparser
 import os
 from shutil import copyfile
 
-import gtk
+from gi.repository import Gtk, Gdk, GLib
 
 from const import CONFIG_PATH
 from dialog import Config
@@ -19,7 +19,7 @@ class ConfigStore():
         self.ui = ui
         if not os.path.isfile(CONFIG_PATH):
             copyfile("/etc/pynetmap-client/global.conf", CONFIG_PATH)
-        self.configuration = ConfigParser.ConfigParser()
+        self.configuration = configparser.ConfigParser()
         self.file = CONFIG_PATH
 
     def check(self):
@@ -27,7 +27,7 @@ class ConfigStore():
         for (k, _) in self.configuration.items("GLOBAL"):
             cfg.set_field(k, self.get(k))
         result = cfg.run()
-        if result == gtk.RESPONSE_OK:
+        if result == Gtk.ResponseType.OK:
             for (k, _) in self.configuration.items("GLOBAL"):
                 self.set(k, cfg.get_field(k))
             self.write()

@@ -9,19 +9,16 @@ import select
 import socket
 import threading
 from subprocess import Popen
-from urlparse import urlparse
+from urllib.request import urlparse
 
-import gtk
+from gi.repository import Gtk, Gdk, GLib,Vte
 
-import vte
 from const import TERMINAL
 
 
 class Terminal:
     def __init__(self, ui):
         self.terminals = dict()
-        self.terminals_prc = dict()
-        self.terminals_hope = dict()
         self.ui = ui
 
     def reload_access(self):
@@ -35,30 +32,23 @@ class Terminal:
     def build(self, key):
         cmd = self.build_cmd(key)
         if cmd != None:
-            background = None
-            blink = 1
-            font = "monospace 10"
-            scrollback = 100
-            terminal = vte.Terminal()
-            terminal.get_pty()
-            if (background):
-                terminal.set_background_image(background)
-            terminal.set_cursor_blinks(blink)
-            terminal.set_font_from_string(font)
-            terminal.set_scrollback_lines(scrollback)
-            master, slave = os.openpty()
-            self.terminals_prc[key] = Popen(["/bin/bash", "-c", cmd], stdin=slave,
-                                            stdout=slave, stderr=slave)
-            self.terminals_hope[key] = 5
-            os.close(slave)
-            terminal.set_pty(master)
-            terminal.show()
-            scrollbar = gtk.VScrollbar()
-            scrollbar.set_adjustment(terminal.get_adjustment())
-            box = gtk.HBox()
-            box.pack_start(terminal)
-            box.pack_start(scrollbar)
-            return box
+            terminal = Vte.Terminal()
+            
+            self.terminals[key] = terminal
+            terminal.spawn_sync(
+                Vte.PtyFlags.DEFAULT,
+                os.environ['HOME'],
+                ["/bin/bash", "-c", cmd],
+                [],
+                GLib.SpawnFlags.DO_NOT_REAP_CHILD,
+                None,
+                None,
+                )
+            swin = Gtk.ScrolledWindow()
+            swin.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+            swin.add_with_viewport(terminal)
+            
+            return swin
         else:
             return None
 
@@ -114,22 +104,10 @@ class Terminal:
             return None
 
     def internal(self, id, force=False):
-        for key in self.terminals_hope.keys():
+        for key in self.terminals.keys():
             if key == id:
                 if force == True:
-                    del self.terminals_hope[key]
                     del self.terminals[key]
-                    self.terminals_prc[key].kill()
-                    del self.terminals_prc[key]
-                else:
-                    self.terminals_hope[key] = 5
-            elif self.terminals_hope[key] > 0:
-                self.terminals_hope[key] -= 1
-            else:
-                del self.terminals_hope[key]
-                del self.terminals[key]
-                self.terminals_prc[key].kill()
-                del self.terminals_prc[key]
         self.reload_access()
         if id not in self.terminals.keys() or self.terminals[id] == None:
             self.terminals[id] = self.build(id)

@@ -4,14 +4,14 @@ __copyright__ = '(c) Samir HERRAZ 2018-2018'
 __version__ = '1.1.0'
 __licence__ = 'GPLv3'
 
-import ConfigParser
+import configparser
 
 from const import CONFIG_PATH
 
 
 class LangStore():
     def __init__(self, config):
-        self.configuration = ConfigParser.ConfigParser()
+        self.configuration = configparser.ConfigParser()
         self.file = "/etc/pynetmap-client/langs.conf"
         self.config = config
 

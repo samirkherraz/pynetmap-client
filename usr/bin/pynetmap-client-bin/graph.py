@@ -8,7 +8,7 @@ import os
 import time
 from datetime import datetime, timedelta
 from const import *
-import gtk
+from gi.repository import Gtk, Gdk, GLib,GdkPixbuf
 
 
 class Graph:
@@ -38,7 +38,7 @@ class Graph:
         file.close()
         os.system("dot -T"+self.format +
                   " /tmp/pynetmap/graph.dot -o  /tmp/pynetmap/graph."+self.format + "; exit")
-        r = gtk.gdk.pixbuf_new_from_file("/tmp/pynetmap/graph."+self.format)
+        r = GdkPixbuf.Pixbuf.new_from_file("/tmp/pynetmap/graph."+self.format)
         #os.system("rm /tmp/pynetmap/*")
         return r
 

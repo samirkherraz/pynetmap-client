@@ -8,9 +8,8 @@ import os
 import signal
 import time
 from threading import Event, Lock, Thread
+from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
 
-import gobject
-import gtk
 
 from api import API
 from configstore import ConfigStore
@@ -22,30 +21,30 @@ from graph import Graph
 from langstore import LangStore
 from terminal import Terminal
 
-gobject.threads_init()
-gtk.gdk.threads_init()
+GLib.threads_init()
+Gdk.threads_init()
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 """ ameliorer search"""
-class TrayIcon(gtk.StatusIcon):
+class TrayIcon(Gtk.StatusIcon):
     def __init__(self, main):
-        gtk.StatusIcon.__init__(self)
+        Gtk.StatusIcon.__init__(self)
         self.main = main
-        pixbuf = gtk.gdk.pixbuf_new_from_file_at_size("/usr/share/pynetmap/icon.png",48,48)
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size("/usr/share/pynetmap/icon.png",48,48)
         self.set_from_pixbuf(pixbuf)
-        self.set_tooltip('PyNetMap')
+        #self.set_tooltip('PyNetMap')
         self.set_visible(True)
 
-        self.menu = menu = gtk.Menu()
+        self.menu = menu = Gtk.Menu()
 
-        reload_item = gtk.MenuItem("Reload")
+        reload_item = Gtk.MenuItem("Reload")
         reload_item.connect("activate", self.reload)
         menu.append(reload_item)
 
-        window_item = gtk.MenuItem("Show Window")
+        window_item = Gtk.MenuItem("Show Window")
         window_item.connect("activate", self.show_window)
         menu.append(window_item)
 
-        quit_item = gtk.MenuItem("Quit")
+        quit_item = Gtk.MenuItem("Quit")
         quit_item.connect("activate", self.quit)
         menu.append(quit_item)
 
@@ -66,9 +65,9 @@ class TrayIcon(gtk.StatusIcon):
     def quit(self, widget, event=None):
         self.main.hide()
         self.main.exit()
-        gtk.main_quit()
+        Gtk.main_quit()
 
-class Boot(gtk.Window):
+class Boot(Gtk.Window):
 
 
     
@@ -79,7 +78,7 @@ class Boot(gtk.Window):
 
 
     def prepare(self):
-        self.gtk_threading_lock = Lock()
+        self.Gtk_threading_lock = Lock()
         self.graph = Graph(self)
         self.selection = []
         self.cstx = 0
@@ -93,7 +92,7 @@ class Boot(gtk.Window):
         self.current_doc = None
         self.set_title(NAME + " - " + VERSION)
         self.set_default_size(1000, 600)
-        self.set_position(gtk.WIN_POS_CENTER)
+        self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
         self.connect("delete_event", self.on_delete_event)
         self.connect("key-press-event", self.on_key_release)
 
@@ -102,32 +101,32 @@ class Boot(gtk.Window):
 
         self.status_icons = dict()
         self.status_icons["alert.memory"] = self.render_icon(
-            gtk.STOCK_DIALOG_INFO, 1)
+            Gtk.STOCK_DIALOG_INFO, 1)
         self.status_icons["alert.disk"] = self.render_icon(
-            gtk.STOCK_HARDDISK, 1)
+            Gtk.STOCK_HARDDISK, 1)
         self.status_icons["alert.mounts"] = self.render_icon(
-            gtk.STOCK_HARDDISK, 1)
-        self.status_icons["alert.cpu"] = self.render_icon(gtk.STOCK_EXECUTE, 1)
+            Gtk.STOCK_HARDDISK, 1)
+        self.status_icons["alert.cpu"] = self.render_icon(Gtk.STOCK_EXECUTE, 1)
         self.status_icons["alert.required_fields"] = self.render_icon(
-            gtk.STOCK_EDIT, 1)
+            Gtk.STOCK_EDIT, 1)
 
         self.status_icons["alert.tunnel"] = self.render_icon(
-            gtk.STOCK_NETWORK, 1)
+            Gtk.STOCK_NETWORK, 1)
 
-        self.status_icons["alert.status"] = self.render_icon(gtk.STOCK_STOP, 1)
+        self.status_icons["alert.status"] = self.render_icon(Gtk.STOCK_STOP, 1)
         self.status_icons["alert.none"] = self.render_icon("", 1)
 
     def server_refresh(self):
         while not self._stop.isSet():
             try:
                 if not self.api.auth_check():
-                    Notify(self.ui.lang.get("gtk.notify.connection.lost.title"),
-                           self.ui.lang.get("gtk.notify.connection.lost.text"))
+                    # Notify(self.ui.lang.get("Gtk.notify.connection.lost.title"),
+                    #        self.ui.lang.get("Gtk.notify.connection.lost.text"))
                     self.api.auth()
                     raise Exception("AUTH")
 
                 self.store.refresh()
-                self.check_alerts()
+                #self.check_alerts()
 
             except:
                 pass
@@ -146,9 +145,9 @@ class Boot(gtk.Window):
             if term != None:
                 self.terminal.add(term)
             else:
-                img = gtk.Image()
+                img = Gtk.Image()
                 img.set_from_pixbuf(self.render_icon(
-                    gtk.STOCK_DIALOG_AUTHENTICATION, 6))
+                    Gtk.STOCK_DIALOG_AUTHENTICATION, 6))
                 self.terminal.add(img)
             self.terminal.show_all()
 
@@ -156,146 +155,147 @@ class Boot(gtk.Window):
 
 
 
-        self.dashStore = gtk.ListStore(str, gtk.gdk.Pixbuf, str, str)
-        self.dash = gtk.TreeView(self.dashStore)
+        self.dashStore = Gtk.ListStore(str, GdkPixbuf.Pixbuf, str, str)
+        self.dash = Gtk.TreeView(self.dashStore)
         self.dash.set_grid_lines(True)
         self.dash.set_headers_visible(False)
         self.dash.set_model(self.dashStore)
         self.dash.set_enable_search(False)
-        self.dash.get_selection().set_mode(gtk.SELECTION_NONE)
+        self.dash.get_selection().set_mode(Gtk.SelectionMode.NONE)
 
-        tvcolumn = gtk.TreeViewColumn()
+        tvcolumn = Gtk.TreeViewColumn()
         self.dash.append_column(tvcolumn)
-        cell = gtk.CellRendererText()
+        cell = Gtk.CellRendererText()
         cell.set_padding(0, 10)
         tvcolumn.pack_start(cell, True)
         tvcolumn.add_attribute(cell, "background", 0)
 
-        tvcolumn = gtk.TreeViewColumn()
+        tvcolumn = Gtk.TreeViewColumn()
         self.dash.append_column(tvcolumn)
-        cell = gtk.CellRendererPixbuf()
+        cell = Gtk.CellRendererPixbuf()
         cell.set_padding(0, 10)
         tvcolumn.pack_start(cell, True)
         tvcolumn.add_attribute(cell, 'pixbuf', 1)
 
-        tvcolumn = gtk.TreeViewColumn()
+        tvcolumn = Gtk.TreeViewColumn()
         self.dash.append_column(tvcolumn)
-        cell = gtk.CellRendererText()
+        cell = Gtk.CellRendererText()
         cell.set_padding(0, 10)
         tvcolumn.pack_start(cell, True)
         tvcolumn.add_attribute(cell, 'text', 2)
 
-        tvcolumn = gtk.TreeViewColumn()
+        tvcolumn = Gtk.TreeViewColumn()
         self.dash.append_column(tvcolumn)
-        cell = gtk.CellRendererText()
+        cell = Gtk.CellRendererText()
         cell.set_padding(0, 10)
         tvcolumn.pack_start(cell, True)
         tvcolumn.add_attribute(cell, 'text', 3)
 
-        self.canvas = gtk.DrawingArea()
-        self.canvas.modify_bg(gtk.STATE_NORMAL, gtk.gdk.Color("#ffffff"))
-        self.canvas.connect("expose-event", self.draw_image)
-        self.canvas.set_events(gtk.gdk.EXPOSURE_MASK
-                               | gtk.gdk.LEAVE_NOTIFY_MASK
-                               | gtk.gdk.BUTTON_PRESS_MASK
-                               | gtk.gdk.POINTER_MOTION_MASK
-                               | gtk.gdk.POINTER_MOTION_HINT_MASK
-                               | gtk.gdk.BUTTON_RELEASE_MASK
-                               )
+        self.canvas = Gtk.DrawingArea()
+        self.canvas.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(1,1,1))
+        self.canvas.connect("draw", self.draw_image)
+        self.canvas.set_events(self.canvas.get_events()
+              | Gdk.EventMask.BUTTON_PRESS_MASK       # mouse down
+              | Gdk.EventMask.BUTTON_RELEASE_MASK   # mouse up
+              | Gdk.EventMask.LEAVE_NOTIFY_MASK   # mouse up
+              | Gdk.EventMask.SCROLL_MASK   # mouse up
+              | Gdk.EventMask.POINTER_MOTION_HINT_MASK   # mouse up
+              | Gdk.EventMask.POINTER_MOTION_MASK)   # mouse move
+
         self.canvas.connect("motion_notify_event", self.drag)
         self.canvas.connect("button_press_event", self.mouse_on)
         self.canvas.connect("button_release_event", self.mouse_off)
         self.canvas.connect('scroll-event', self.scroll)
 
-        self.treeStore = gtk.TreeStore(str, str, gtk.gdk.Pixbuf)
-        self.tree = gtk.TreeView(self.treeStore)
+        self.treeStore = Gtk.TreeStore(str, str, GdkPixbuf.Pixbuf)
+        self.tree = Gtk.TreeView(self.treeStore)
         self.tree.set_model(self.treeStore)
         self.tree.set_enable_search(False)
         self.tree.connect("cursor-changed", self.selection_changed)
 
-        tvcolumn = gtk.TreeViewColumn(self.lang.get("gtk.tree.name"))
+        tvcolumn = Gtk.TreeViewColumn(self.lang.get("Gtk.tree.name"))
         self.tree.append_column(tvcolumn)
-        cell = gtk.CellRendererText()
+        cell = Gtk.CellRendererText()
         tvcolumn.pack_start(cell, True)
         tvcolumn.add_attribute(cell, 'text', 1)
 
-        tvcolumn = gtk.TreeViewColumn(self.lang.get("gtk.tree.state"))
+        tvcolumn = Gtk.TreeViewColumn(self.lang.get("Gtk.tree.state"))
         self.tree.append_column(tvcolumn)
-        cell = gtk.CellRendererPixbuf()
+        cell = Gtk.CellRendererPixbuf()
         tvcolumn.pack_start(cell, True)
         tvcolumn.add_attribute(cell, 'pixbuf', 2)
-        toolbar = gtk.Toolbar()
-        toolbar.set_style(gtk.TOOLBAR_ICONS)
-        vBox = gtk.VBox(False, 2)
+        toolbar = Gtk.Toolbar()
+        #toolbar.set_style(Gtk.Toolbar.ICONS)
+        vBox = Gtk.VBox(False, 2)
         toolbar_n = 0
         if self.api.get_access("users.privilege.edit"):
-            newtb = gtk.ToolButton(gtk.STOCK_NEW)
+            newtb = Gtk.ToolButton(Gtk.STOCK_NEW)
             newtb.connect("clicked", self.new_entry)
             toolbar.insert(newtb, toolbar_n)
             toolbar_n += 1
 
-            newtb = gtk.ToolButton(gtk.STOCK_EDIT)
+            newtb = Gtk.ToolButton(Gtk.STOCK_EDIT)
             newtb.connect("clicked", self.edit_entry)
             toolbar.insert(newtb, 1)
             toolbar_n += 1
 
-            newtb = gtk.ToolButton(gtk.STOCK_DELETE)
+            newtb = Gtk.ToolButton(Gtk.STOCK_DELETE)
             newtb.connect("clicked", self.delete_entry)
             toolbar.insert(newtb, toolbar_n)
             toolbar_n += 1
 
         if self.api.get_access("users.privilege.terminal"):
-            newtb = gtk.ToolButton(gtk.STOCK_MEDIA_PLAY)
+            newtb = Gtk.ToolButton(Gtk.STOCK_MEDIA_PLAY)
             newtb.connect("clicked", self.open_terminal)
             toolbar.insert(newtb, toolbar_n)
             toolbar_n += 1
 
-        newtb = gtk.ToolButton(gtk.STOCK_FIND)
+        newtb = Gtk.ToolButton(Gtk.STOCK_FIND)
         newtb.connect("clicked", self.search)
         toolbar.insert(newtb, toolbar_n)
         toolbar_n += 1
 
-        newtb = gtk.ToolButton(gtk.STOCK_SAVE)
+        newtb = Gtk.ToolButton(Gtk.STOCK_SAVE)
         newtb.connect("clicked", self.export)
         toolbar.insert(newtb, toolbar_n)
         toolbar_n += 1
 
-        newtb = gtk.ToolButton(gtk.STOCK_REFRESH)
+        newtb = Gtk.ToolButton(Gtk.STOCK_REFRESH)
         newtb.connect("clicked", self.open_internal_terminal)
         toolbar.insert(newtb, toolbar_n)
         toolbar_n += 1
 
-        newtb = gtk.ToolButton(gtk.STOCK_PROPERTIES)
+        newtb = Gtk.ToolButton(Gtk.STOCK_PROPERTIES)
         newtb.connect("clicked", self.edit_config)
         toolbar.insert(newtb, toolbar_n)
         toolbar_n += 1
 
         vBox.pack_start(toolbar, False, False, 0)
-        hBox = gtk.HPaned()
+        hBox = Gtk.HPaned()
         hBox.set_position(300)
-        swin = gtk.ScrolledWindow()
-        swin.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        swin = Gtk.ScrolledWindow()
+        swin.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         swin.add_with_viewport(self.tree)
-        vBoxLeft = gtk.VBox()
+        vBoxLeft = Gtk.VBox(True, 2)
         vBoxLeft.add(swin)
-        self.notebook = gtk.Notebook()
+        self.notebook = Gtk.Notebook()
         self.notebook.connect("switch-page", self.page_change)
-        self.notebook.append_page(self.canvas, gtk.Label(self.lang.get(
-            "gtk.notebook.graph.title")))
+        self.notebook.append_page(self.canvas, Gtk.Label(self.lang.get(
+            "Gtk.notebook.graph.title")))
         self.TAB_GRAPH = 0
         if self.api.get_access("users.privilege.terminal"):
-            self.terminal = gtk.VBox()
-            self.notebook.append_page(self.terminal, gtk.Label(self.lang.get(
-                "gtk.notebook.terminal.title")))
+            self.terminal = Gtk.VBox(True, 2)
+            self.notebook.append_page(self.terminal, Gtk.Label(self.lang.get(
+                "Gtk.notebook.terminal.title")))
             self.TAB_TERMINAL = 1
         else:
             self.TAB_TERMINAL = None
 
-        swin = gtk.ScrolledWindow()
-        swin.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        swin = Gtk.ScrolledWindow()
+        swin.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         swin.add_with_viewport(self.dash)
-        self.dashTitle = gtk.Label(self.lang.get(
-            "gtk.notebook.dash.title").replace("$value", "0"))
+        self.dashTitle = Gtk.Label(self.lang.get(
+            "Gtk.notebook.dash.title").replace("$value", "0"))
         self.notebook.append_page(swin, self.dashTitle)
         self.TAB_ALERTS = 2
         hBox.add(vBoxLeft)
@@ -308,8 +308,8 @@ class Boot(gtk.Window):
         self.api.reset()
 
     def search(self, e=None):
-        res = Ask(self, self.lang.get("gtk.search.dialog.title"),
-                  self.lang.get("gtk.search.dialog.text"))
+        res = Ask(self, self.lang.get("Gtk.search.dialog.title"),
+                  self.lang.get("Gtk.search.dialog.text"))
         if res.is_ok():
             keys = self.store.find_by_attr(res.getResponse())
             if len(keys) > 0:
@@ -359,11 +359,11 @@ class Boot(gtk.Window):
                 self.selection_changed(None)
 
     def refresh(self):
-        gobject.idle_add(self.updateui,
-                         priority=gobject.PRIORITY_HIGH)
+        GLib.idle_add(self.updateui,
+                         priority=GLib.PRIORITY_HIGH)
 
     def delete_entry(self, widget):
-        r = AskConfirmation(self,  self.lang.get("gtk.delete.dialog.text") +
+        r = AskConfirmation(self,  self.lang.get("Gtk.delete.dialog.text") +
                             self.store.get_attr("base", self.selection[0], KEY_NAME))
         if r.is_ok():
             if len(self.selection) > 1:
@@ -382,8 +382,8 @@ class Boot(gtk.Window):
             x, y = widget.get_pointer()
             self.x = x/self.scale
             self.y = y/self.scale
-            gobject.idle_add(self.canvas.queue_draw,
-                             priority=gobject.PRIORITY_HIGH)
+            GLib.idle_add(self.canvas.queue_draw,
+                             priority=GLib.PRIORITY_HIGH)
 
     def mouse_on(self, widget, elm):
         if elm.button == 1:
@@ -408,20 +408,20 @@ class Boot(gtk.Window):
         self.ly = y - (self.y - self.ly)
         self.x = x
         self.y = y
-        if elm.direction == gtk.gdk.SCROLL_UP and t["width"] < w*0.6:
+        if elm.direction == Gdk.ScrollDirection.UP and t["width"] < w*0.6:
             self.scale *= 1.12
-        elif elm.direction == gtk.gdk.SCROLL_DOWN and self.scale > 1:
+        elif elm.direction == Gdk.ScrollDirection.DOWN and self.scale > 1:
             self.scale /= 1.12
         else:
             return
 
-        gobject.idle_add(self.canvas.queue_draw,
-                         priority=gobject.PRIORITY_LOW)
+        GLib.idle_add(self.canvas.queue_draw,
+                         priority=GLib.PRIORITY_LOW)
 
     def translate(self, p_width, p_height):
         ret = {}
-        w = self.canvas.allocation.width
-        h = self.canvas.allocation.height
+        w = self.canvas.get_allocated_width()
+        h = self.canvas.get_allocated_height()
         scale_w = float(w)/float(p_width)
         scale_h = float(h)/float(p_height)
         ret["scale_w"] = (min(scale_h, scale_w)) * self.scale
@@ -435,16 +435,18 @@ class Boot(gtk.Window):
 
         return ret
 
-    def draw_image(self, e, f):
+    def draw_image(self, e, cr):
         if self.current_doc == None:
             return
+        cr.set_source_rgb(1,1,1)
+        cr.paint()
         translate = self.translate(
             self.current_doc.get_width(), self.current_doc.get_height())
-        pixbuf = self.current_doc.scale_simple(
-            translate["width"], translate["height"], gtk.gdk.INTERP_NEAREST)
-        self.canvas.window.draw_pixbuf(
-            None, pixbuf, 0, 0, translate["translate_x"], translate["translate_y"], translate["width"], translate["height"])
-
+        pixbuf = self.current_doc.scale_simple(translate["width"], translate["height"], 0)
+        Gdk.cairo_set_source_pixbuf(cr,pixbuf, translate["translate_x"], translate["translate_y"])
+        
+        cr.paint()
+        
     def populate(self, lst=None, parent=None):
         if lst == None:
             lst = self.store.get_table("structure")
@@ -505,7 +507,7 @@ class Boot(gtk.Window):
                         del self.alerts[key][lkey]
 
         self.dashTitle.set_text(self.lang.get(
-            "gtk.notebook.dash.title").replace("$value", str(fatal)))
+            "Gtk.notebook.dash.title").replace("$value", str(fatal)))
         self.dash.show_all()
 
     def page_change(self, e, n, v):
@@ -514,8 +516,8 @@ class Boot(gtk.Window):
                 self.current_doc = self.graph.generate()
             elif v == self.TAB_TERMINAL:
                 self.open_internal_terminal()
-            gobject.idle_add(self.canvas.queue_draw,
-                             priority=gobject.PRIORITY_LOW)
+            GLib.idle_add(self.canvas.queue_draw,
+                             priority=GLib.PRIORITY_LOW)
 
     def draw(self, elm, changed):
         if len(elm) > 0:
@@ -528,13 +530,13 @@ class Boot(gtk.Window):
                 ref = True
 
             if ref:
-                gobject.idle_add(self.canvas.queue_draw,
-                                 priority=gobject.PRIORITY_LOW)
+                GLib.idle_add(self.canvas.queue_draw,
+                                 priority=GLib.PRIORITY_LOW)
 
     def draw_all_map(self, w):
         self.current_doc = self.graph.generate_all_map()
-        gobject.idle_add(self.canvas.queue_draw,
-                         priority=gobject.PRIORITY_LOW)
+        GLib.idle_add(self.canvas.queue_draw,
+                         priority=GLib.PRIORITY_LOW)
 
     def __init__(self):
         super(Boot, self).__init__()
@@ -556,9 +558,9 @@ class Boot(gtk.Window):
 
     def on_key_release(self, widget, event, data=None):
         keyval = event.keyval
-        keyval_name = gtk.gdk.keyval_name(keyval)
+        keyval_name = Gdk.keyval_name(keyval)
         state = event.state
-        ctrl = (state & gtk.gdk.CONTROL_MASK)
+        ctrl = (state & Gdk.ModifierType.CONTROL_MASK)
         if ctrl and keyval_name == 'f':
             self.search()
         elif ctrl and keyval_name == 't':
@@ -595,7 +597,7 @@ class Boot(gtk.Window):
                 self.api.reset()
             try:
                 self.auth_gui()
-            except:
+            except ValueError :
                 Error(self,  self.lang.get("gtk.serverdown.dialog.text"))
                 exit(0)
             if not self.api.auth_check():
@@ -633,6 +635,7 @@ class Boot(gtk.Window):
                 self.ly = 0
                 self.y = 0
                 self.selection = value
+                print(self.selection)
             else:
                 changed = False
             self.draw(value, changed)
@@ -640,5 +643,5 @@ class Boot(gtk.Window):
 
 if __name__ == '__main__':
     mainBoot = Boot()
-    gtk.main()
+    Gtk.main()
     mainBoot.exit()

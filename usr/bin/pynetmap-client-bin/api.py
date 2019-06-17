@@ -33,7 +33,7 @@ class API:
     def auth_user(self, username, password):
         self.d = dict()
         self.d["username"] = username
-        self.d["password"] = hashlib.sha256(password).hexdigest()
+        self.d["password"] = hashlib.sha256(password.encode()).hexdigest()
         return self.auth()
 
     def is_server_online(self):
@@ -55,11 +55,11 @@ class API:
         if t["TOKEN"] != None:
             self.cookies = {"TOKEN": t["TOKEN"],
                             "USERNAME": self.d["username"]}
-            Notify(self.ui.lang.get("gtk.notify.connection.success.title"),
-                   self.ui.lang.get("gtk.notify.connection.success.text"))
+            Notify(self.ui.lang.get("Gtk.notify.connection.success.title"),
+                   self.ui.lang.get("Gtk.notify.connection.success.text"))
             return True
-        Notify(self.ui.lang.get("gtk.notify.connection.fail.title"),
-               self.ui.lang.get("gtk.notify.connection.fail.text"))
+        Notify(self.ui.lang.get("Gtk.notify.connection.fail.title"),
+               self.ui.lang.get("Gtk.notify.connection.fail.text"))
 
         return False
 

@@ -7,7 +7,8 @@ __licence__ = 'GPLv3'
 import os
 
 TERMINAL = """sshpass -p [SSHPassword] ssh -p [SSHPort] -tt -o StrictHostKeyChecking=no [SSHUsername]@[Server] [ID] """
-CONFIG_PATH = os.getenv("HOME")+"/.pynetmap-client"
+#CONFIG_PATH = os.getenv("HOME")+"/.pynetmap-client"
+CONFIG_PATH = "./etc/pynetmap-client/global.conf"
 NAME = "PyNetMAP"
 VERSION = " 1.0.4-beta"
 
