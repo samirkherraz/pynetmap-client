@@ -12,20 +12,17 @@ from subprocess import Popen
 from urllib.request import urlparse
 from threading import Lock
 from gi.repository import Gtk, Gdk, GLib, Vte
-
-from const import TERMINAL
-
-
+from Core.Config import Config
+from Core.Api import API
 class Terminal:
-    def __init__(self, ui):
+    def __init__(self):
         self.terminals = dict()
-        self.ui = ui
         self._lock = Lock()
 
     def reload_access(self):
-        if self.ui.api.get_access("terminal"):
-            self.sshuser = self.ui.api.get("server", "ssh", "user")
-            self.sshpassword = self.ui.api.get("server", "ssh", "password")
+        if API.getInstance().get_access("terminal"):
+            self.sshuser = API.getInstance().get("server", "ssh", "user")
+            self.sshpassword = API.getInstance().get("server", "ssh", "password")
         else:
             self.sshuser = None
             self.sshpassword = None
@@ -91,14 +88,14 @@ class Terminal:
         try:
             cmd = "sshpass -p [SSHPassword] ssh -p [SSHPort] -tt -o StrictHostKeyChecking=no [SSHUsername]@[Server] [ID] "
             cmd = cmd.replace("[Server]", str(
-                urlparse(self.ui.config.get("server")).hostname))
+                urlparse(Config.getInstance().get("server")).hostname))
             cmd = cmd.replace("[SSHUsername]", self.sshuser)
             cmd = cmd.replace("[SSHPassword]",
                               self.sshpassword.replace("!", "\\!").strip())
             cmd = cmd.replace(
-                "[SSHPort]", self.ui.config.get("SSHPort").strip())
+                "[SSHPort]", Config.getInstance().get("SSHPort").strip())
             cmd = cmd.replace("[TerminalCommand]", str(
-                self.ui.config.get("TerminalCommand")).strip())
+                Config.getInstance().get("TerminalCommand")).strip())
             cmd = cmd.replace("[ID]", key)
             return cmd
         except:
@@ -116,7 +113,7 @@ class Terminal:
         self.reload_access()
         cmd = self.build_cmd(key)
         if cmd != None:
-            os.system(str(self.ui.config.get("TerminalCommand")
+            os.system(str(Config.getInstance().get("TerminalCommand")
                           ).strip()+' -e "'+cmd+'" &')
 
 

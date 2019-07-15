@@ -5,30 +5,30 @@ __version__ = '1.2.0'
 __licence__ = 'GPLv3'
 
 import os
-from const import *
+from Constants import *
+from Core.Api import API
+from Core.Lang import Lang
 
-class Export:
+class MDExport:
     def __init__(self, parent):
-        self.store = parent.store
-        self.lang = parent.lang
-
+       
         self.filesystem = open("/tmp/export-"+str(os.getuid())+".md", "w")
-        st = self.write(self.store.get_table("structure"), 0)
+        st = self.write(API.getInstance().get_table("structure"), 0)
         self.filesystem.write(st)
         self.filesystem.close()
         os.system("xdg-open /tmp/export-"+str(os.getuid())+".md &")
 
-    def writeNode(self, key, spc):
-        el = self.store.get("base", key)
+    def write_node(self, key, spc):
+        el = API.getInstance().get("base", key)
         s = "\n"
         s += spc+" "+el[KEY_TYPE]+" - "+el[KEY_NAME]+"\n"
         hidden = [KEY_SSH_PASSWORD, KEY_TYPE, KEY_NAME, KEY_SSH_USER, KEY_SSH_PORT,
-                  "tunnel.user", "tunnel.password", "tunnel.port"]
+                  KEY_TUNNEL_IP, KEY_TUNNEL_PASSWORD, KEY_TUNNEL_PORT, KEY_TUNNEL_USER]
         for key in el:
             if key in hidden:
                 pass
             else:
-                s += "  - "+self.lang.get(key) + " : "
+                s += "  - "+Lang.getInstance().get(key) + " : "
                 if "\n" in str(el[key]):
                     s += "\n"+'```\n'
                     s += str(el[key])
@@ -48,6 +48,6 @@ class Export:
             spc = "#"
         st = ""
         for k in node:
-            st += self.writeNode(k, spc)
+            st += self.write_node(k, spc)
             st += self.write(node[k], lvl+2)
         return st

@@ -7,31 +7,20 @@ __licence__ = 'GPLv3'
 import configparser
 import os
 from shutil import copyfile
-
 from gi.repository import Gtk, Gdk, GLib
 
-from const import CONFIG_PATH
-from dialog import Config
+from Constants import *
+
+class Config():
+
+    __INSTANCE__ =None
 
 
-class ConfigStore():
-    def __init__(self, ui):
-        self.ui = ui
+    def __init__(self):
         if not os.path.isfile(CONFIG_PATH):
             copyfile("/etc/pynetmap-client/global.conf", CONFIG_PATH)
         self.configuration = configparser.ConfigParser()
         self.file = CONFIG_PATH
-
-    def check(self):
-        cfg = Config(self.ui)
-        for (k, _) in self.configuration.items("GLOBAL"):
-            cfg.set_field(k, self.get(k))
-        result = cfg.run()
-        if result == Gtk.ResponseType.OK:
-            for (k, _) in self.configuration.items("GLOBAL"):
-                self.set(k, cfg.get_field(k))
-            self.write()
-        cfg.destroy()
 
     def read(self):
         with open(self.file, "r") as fp:
@@ -46,3 +35,13 @@ class ConfigStore():
 
     def set(self, key, value):
         self.configuration.set("GLOBAL", key, value)
+
+    def items(self):
+        return self.configuration.items("GLOBAL")
+
+    @staticmethod
+    def getInstance():
+        if Config.__INSTANCE__ is None:
+            Config.__INSTANCE__ = Config()
+            Config.__INSTANCE__.read()
+        return Config.__INSTANCE__

@@ -7,18 +7,16 @@ __licence__ = 'GPLv3'
 import os
 import time
 from datetime import datetime, timedelta
-from const import *
+from Constants import *
 from gi.repository import Gtk, Gdk, GLib,GdkPixbuf
-
-
+from Core.Api import API
+from Core.Lang import Lang
 class Graph:
-    def __init__(self, ui):
+    def __init__(self):
         try:
             os.mkdir("/tmp/pynetmap/")
         except:
             pass
-        self.store = ui.store
-        self.ui = ui
         self.header = "Digraph{ \nnode [style=\"filled, rounded\",fillcolor=\"#eeeeee\",fontname=\"Sans\", fixedsize=false,shape=plaintext];\ngraph [splines=\"line\", dpi = 196, pad=\"1\", ranksep=\"1\",nodesep=\"0.5\"]\n"
         self.footer = "}"
         self.format = "jpeg"
@@ -44,13 +42,13 @@ class Graph:
 
     def node(self, key, detailed, lvl=0):
 
-        vmstate = self.store.get(
+        vmstate = API.getInstance().get(
             "module", key, KEY_STATUS)
 
-        vmicon = self.store.get(
-            "schema", self.store.get("base", key, KEY_TYPE), "Icon")
+        vmicon = API.getInstance().get(
+            "schema", API.getInstance().get("base", key, KEY_TYPE), "Icon")
 
-        vmname = self.store.get("base", key, KEY_NAME)
+        vmname = API.getInstance().get("base", key, KEY_NAME)
 
         icon = vmicon+".png"
         try:
@@ -72,15 +70,15 @@ class Graph:
         s += "<TR><TD port='IMG' colspan='2'><IMG SRC='"+icon+"' /></TD></TR>"
         s += "<TR><TD colspan='2' ><b>" + vmname+"</b></TD></TR>"
         if detailed:
-            vmfields = self.store.get(
-                "schema", self.store.get("base", key, KEY_TYPE))["Fields"]
+            vmfields = API.getInstance().get(
+                "schema", API.getInstance().get("base", key, KEY_TYPE))["Fields"]
             
-            info = self.store.get("module", key)
+            info = API.getInstance().get("module", key)
             table = dict()
             table["base"] = []
             table["baseinfo"] = []
             table["basemultiline"] = []
-            for k in self.store.get("base", key).keys():
+            for k in API.getInstance().get("base", key).keys():
                     if k in vmfields.keys() and vmfields[k] == "LONG":
                         table["basemultiline"].append(k)
                     else:
@@ -106,7 +104,7 @@ class Graph:
                 for k in info[KEY_MONITOR_HISTORY]:
                     
                     name = (vmname+k+".png").replace(" ", "").lower()
-                    self.subgraph(info[KEY_MONITOR_HISTORY][k], name, self.ui.lang.get(k), (k == KEY_STATUS) )
+                    self.subgraph(info[KEY_MONITOR_HISTORY][k], name, Lang.getInstance().get(k), (k == KEY_STATUS) )
                     tblhistory += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><IMG SRC='/tmp/pynetmap/" + \
                         name+"' /></TD></TR>"
                     tblhistoryb = True
@@ -115,11 +113,11 @@ class Graph:
             tblbase = "<TABLE border='0' cellborder='0' cellspacing='5'>"
             for k in table["base"]:
                 if ".password" in k:
-                    rst = "*" * len(str(self.store.get("base", key, k)))
+                    rst = "*" * len(str(API.getInstance().get("base", key, k)))
                 else:
-                    rst = str(self.store.get("base", key, k))
+                    rst = str(API.getInstance().get("base", key, k))
                     rst = rst.replace('"', '\"')
-                tblbase += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><B>"+self.ui.lang.get(k) + \
+                tblbase += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><B>"+Lang.getInstance().get(k) + \
                     "</B></TD><TD VALIGN='TOP' ALIGN='LEFT'>"+rst + "</TD></TR>"
                 tblbaseb = True
             for k in table["baseinfo"]:
@@ -129,13 +127,13 @@ class Graph:
                 else:
                     rst = str(info[k])
                     rst = rst.replace('"', '\"')
-                tblbase += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><B>"+self.ui.lang.get(k) + \
+                tblbase += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><B>"+Lang.getInstance().get(k) + \
                     "</B></TD><TD VALIGN='TOP' ALIGN='LEFT'>"+rst + "</TD></TR>"
                 tblbaseb = True
             for k in table["basemultiline"]:
-                rst = str(self.store.get("base", key, k))
+                rst = str(API.getInstance().get("base", key, k))
                 rst = rst.replace('\n', "<BR ALIGN='LEFT'/>")
-                tblbase += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><B>"+self.ui.lang.get(k) + \
+                tblbase += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><B>"+Lang.getInstance().get(k) + \
                     "</B></TD><TD VALIGN='TOP' ALIGN='LEFT'>"+rst + "</TD></TR>"
                 tblbaseb = True
 
@@ -150,7 +148,7 @@ class Graph:
                         tbllist += "<TR><TD VALIGN='TOP' ALIGN='LEFT'>"
 
                         tbllist += "<TABLE border='0' cellborder='0' cellspacing='5'><TR><TD ALIGN='LEFT'><B><U>" + \
-                            self.ui.lang.get(k)+"</U></B></TD></TR>"
+                            Lang.getInstance().get(k)+"</U></B></TD></TR>"
 
                         for l in rst:
                             tbllist += "<TR>"
@@ -224,30 +222,30 @@ class Graph:
 
     def generate_node_recur(self, key,  detailed, lvl):
         st = self.node(key, detailed, lvl)
-        for k in self.store.get_children(key):
+        for k in API.getInstance().find_children(key):
             st += self.generate_node_recur(k, detailed, lvl+1)
             st += self.edge(key, k, lvl+1)
         return st
 
-    def generate(self):
+    def generate(self, selection):
 
         st = self.header
-        st += self.node(self.ui.selection[0], True)
+        st += self.node(selection[0], True)
         i = 1
-        while i < len(self.ui.selection):
-            st += self.node(self.ui.selection[i], False)
-            st += self.edge(self.ui.selection[i], self.ui.selection[i-1], 0)
+        while i < len(selection):
+            st += self.node(selection[i], False)
+            st += self.edge(selection[i], selection[i-1], 0)
             i += 1
 
-        for o in self.store.get_children(self.ui.selection[0]):
+        for o in API.getInstance().find_children(selection[0]):
             st += self.generate_node_recur(o, False, 1)
-            st += self.edge(self.ui.selection[0], o, 1)
+            st += self.edge(selection[0], o, 1)
         st += self.footer
         return self.calldot(st)
 
     def generate_all_map(self):
         st = self.header
-        elm = self.store.get_table("structure")
+        elm = API.getInstance().get_table("structure")
         for k in elm:
             st += self.generate_node_recur(k, False, 0)
 

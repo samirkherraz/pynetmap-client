@@ -6,14 +6,17 @@ __licence__ = 'GPLv3'
 
 import configparser
 
-from const import CONFIG_PATH
+from Constants import *
 
 
-class LangStore():
-    def __init__(self, config):
+class Lang():
+
+    __INSTANCE__ =None
+
+    def __init__(self, lang):
         self.configuration = configparser.ConfigParser()
         self.file = "/etc/pynetmap-client/langs.conf"
-        self.config = config
+        self.lang = lang
 
     def read(self):
         with open(self.file, "r") as fp:
@@ -21,9 +24,17 @@ class LangStore():
 
     def get(self, key):
         try:
-            return self.configuration.get(self.config.get("Language"), key)
+            return self.configuration.get(self.lang, key)
         except:
             try:
                 return self.configuration.get("DEFAULT", key)
             except:
                 return key
+    
+
+    @staticmethod
+    def getInstance(lang="DEFAULT"):
+        if Lang.__INSTANCE__ is None:
+            Lang.__INSTANCE__ = Lang(lang)
+            Lang.__INSTANCE__.read()
+        return Lang.__INSTANCE__

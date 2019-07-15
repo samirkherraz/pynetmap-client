@@ -8,15 +8,13 @@ __licence__ = 'GPLv3'
 import hashlib
 import json
 from threading import Thread
-
 import requests
-
-from dialog import Notify
-
-
+from Core.Config import Config
 class API:
-    def __init__(self, ui):
-        self.ui = ui
+
+    __INSTANCE__ =None
+
+    def __init__(self):
         self.last_update = -1
         self.cookies = None
         self.session = requests.Session()
@@ -41,7 +39,7 @@ class API:
                 print(content)
                 return None
     def reset(self):
-        self.url=self.ui.config.get("server")+"/"
+        self.url= Config.getInstance().get("server")+"/"
 
 
     def auth_user(self, username, password):
@@ -52,7 +50,7 @@ class API:
 
     def is_server_online(self):
         try:
-            self.__post(self.url)
+            self.__post(self.url+"ping")
             return True
         except Exception as e:
             print(e)
@@ -67,12 +65,7 @@ class API:
         if t["TOKEN"] is not None:
             self.cookies={"TOKEN": t["TOKEN"],
                             "USERNAME": self.d["username"]}
-            Notify(self.ui.lang.get("Gtk.notify.connection.success.title"),
-                   self.ui.lang.get("Gtk.notify.connection.success.text"))
             return True
-        Notify(self.ui.lang.get("Gtk.notify.connection.fail.title"),
-               self.ui.lang.get("Gtk.notify.connection.fail.text"))
-
         return False
 
     def auth_check(self):
@@ -187,3 +180,10 @@ class API:
 
     def cleanup(self):
         self.__post("data/cleanup/")
+
+    
+    @staticmethod
+    def getInstance():
+        if API.__INSTANCE__ is None:
+            API.__INSTANCE__ = API()
+        return API.__INSTANCE__

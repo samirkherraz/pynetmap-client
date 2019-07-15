@@ -10,16 +10,21 @@ import time
 from threading import Event, Lock, Thread
 from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
 
+from Core.Api import API
+from Core.Config import Config
+from Core.Lang import Lang
+from Core.MDExport import MDExport
+from Constants import *
+from Core.Graph import Graph
+from Core.Terminal import Terminal
+from Core.Dialogs.GtkAdd import GtkAdd as Add
+from Core.Dialogs.GtkAsk import GtkAsk as Ask
+from Core.Dialogs.GtkConfirmation import GtkConfirmation as AskConfirmation
+from Core.Dialogs.GtkEdit import GtkEdit as Edit
+from Core.Dialogs.GtkError import GtkError as Error
+from Core.Dialogs.GtkNotify import GtkNotify as Notify
+from Core.Dialogs.GtkConfig import GtkConfig
 
-from api import API
-from configstore import ConfigStore
-from const import *
-from database import Database
-from dialog import Add, Ask, AskConfirmation, Edit, Error, Notify
-from export import Export
-from graph import Graph
-from langstore import LangStore
-from terminal import Terminal
 
 GLib.threads_init()
 Gdk.threads_init()
@@ -34,21 +39,21 @@ class TrayIcon(Gtk.StatusIcon):
         #self.set_tooltip('PyNetMap')
         self.set_visible(True)
 
-        self.menu = menu = Gtk.Menu()
+        self.menu = Gtk.Menu()
 
         reload_item = Gtk.MenuItem("Reload")
         reload_item.connect("activate", self.reload)
-        menu.append(reload_item)
+        self.menu.append(reload_item)
 
         window_item = Gtk.MenuItem("Show Window")
         window_item.connect("activate", self.show_window)
-        menu.append(window_item)
+        self.menu.append(window_item)
 
         quit_item = Gtk.MenuItem("Quit")
         quit_item.connect("activate", self.quit)
-        menu.append(quit_item)
+        self.menu.append(quit_item)
 
-        menu.show_all()
+        self.menu.show_all()
 
         self.connect("activate", self.show_window)
         self.connect('popup-menu', self.icon_clicked)
@@ -61,7 +66,7 @@ class TrayIcon(Gtk.StatusIcon):
         self.menu.popup(None, None, None, button, 0,0)
 
     def reload(self, widget,event=None):
-        self.main.store.refresh()
+        API.getInstance().refresh()
         self.main.refresh()
 
     def quit(self, widget, event=None):
@@ -82,7 +87,7 @@ class Boot(Gtk.Window):
 
     def prepare(self):
         self.Gtk_threading_lock = Lock()
-        self.graph = Graph(self)
+        self.graph = Graph()
         self.selection = []
         self.cstx = 0
         self.csty = 0
@@ -122,27 +127,27 @@ class Boot(Gtk.Window):
     def server_refresh(self):
         while not self._stop.isSet():
             try:
-                if not self.api.auth_check():
+                if not API.getInstance().auth_check():
                     Notify(self.ui.lang.get("Gtk.notify.connection.lost.title"),
                             self.ui.lang.get("Gtk.notify.connection.lost.text"))
-                    self.api.auth()
+                    API.getInstance().auth()
                     raise Exception("AUTH")
 
                 self.refresh()
             except:
                 pass
-            self._stop.wait(int(self.config.get("refresh")))
+            self._stop.wait(int(Config.getInstance().get("refresh")))
 
 
 
     def open_terminal(self, _=None):
 
-        if self.api.get_access("terminal"):
+        if API.getInstance().get_access("terminal"):
             if len(self.selection) > 0:
                 self.terminalbox.external(self.selection[0])
 
     def open_internal_terminal(self, e=None):
-        if self.api.get_access("terminal"):
+        if API.getInstance().get_access("terminal"):
             self.terminal.forall(self.terminal.remove)
             term = self.terminalbox.internal(self.selection[0], e != None)
             if term != None:
@@ -216,13 +221,13 @@ class Boot(Gtk.Window):
         self.tree.set_enable_search(False)
         self.tree.connect("cursor-changed", self.selection_changed)
 
-        tvcolumn = Gtk.TreeViewColumn(self.lang.get("Gtk.tree.name"))
+        tvcolumn = Gtk.TreeViewColumn(Lang.getInstance().get("Gtk.tree.name"))
         self.tree.append_column(tvcolumn)
         cell = Gtk.CellRendererText()
         tvcolumn.pack_start(cell, True)
         tvcolumn.add_attribute(cell, 'text', 1)
 
-        tvcolumn = Gtk.TreeViewColumn(self.lang.get("Gtk.tree.state"))
+        tvcolumn = Gtk.TreeViewColumn(Lang.getInstance().get("Gtk.tree.state"))
         self.tree.append_column(tvcolumn)
         cell = Gtk.CellRendererPixbuf()
         tvcolumn.pack_start(cell, True)
@@ -231,7 +236,7 @@ class Boot(Gtk.Window):
         #toolbar.set_style(Gtk.Toolbar.ICONS)
         vBox = Gtk.VBox(False, 2)
         toolbar_n = 0
-        if self.api.get_access("edit"):
+        if API.getInstance().get_access("edit"):
             newtb = Gtk.ToolButton(Gtk.STOCK_NEW)
             newtb.connect("clicked", self.new_entry)
             toolbar.insert(newtb, toolbar_n)
@@ -247,7 +252,7 @@ class Boot(Gtk.Window):
             toolbar.insert(newtb, toolbar_n)
             toolbar_n += 1
 
-        if self.api.get_access("terminal"):
+        if API.getInstance().get_access("terminal"):
             newtb = Gtk.ToolButton(Gtk.STOCK_MEDIA_PLAY)
             newtb.connect("clicked", self.open_terminal)
             toolbar.insert(newtb, toolbar_n)
@@ -283,12 +288,12 @@ class Boot(Gtk.Window):
         vBoxLeft.add(swin)
         self.notebook = Gtk.Notebook()
         self.notebook.connect("switch-page", self.page_change)
-        self.notebook.append_page(self.canvas, Gtk.Label(self.lang.get(
+        self.notebook.append_page(self.canvas, Gtk.Label(Lang.getInstance().get(
             "Gtk.notebook.graph.title")))
         self.TAB_GRAPH = 0
-        if self.api.get_access("terminal"):
+        if API.getInstance().get_access("terminal"):
             self.terminal = Gtk.VBox(True, 2)
-            self.notebook.append_page(self.terminal, Gtk.Label(self.lang.get(
+            self.notebook.append_page(self.terminal, Gtk.Label(Lang.getInstance().get(
                 "Gtk.notebook.terminal.title")))
             self.TAB_TERMINAL = 1
         else:
@@ -297,7 +302,7 @@ class Boot(Gtk.Window):
         swin = Gtk.ScrolledWindow()
         swin.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         swin.add_with_viewport(self.dash)
-        self.dashTitle = Gtk.Label(self.lang.get(
+        self.dashTitle = Gtk.Label(Lang.getInstance().get(
             "Gtk.notebook.dash.title").replace("$value", "0"))
         #self.notebook.append_page(swin, self.dashTitle)
         self.TAB_ALERTS = 2
@@ -307,14 +312,22 @@ class Boot(Gtk.Window):
         self.add(vBox)
 
     def edit_config(self, _):
-        self.config.check()
-        self.api.reset()
+        cfg = GtkConfig()
+        for (k, _) in Config.getInstance().items():
+            cfg.set_field(k, Config.getInstance().get(k))
+        result = cfg.run()
+        if result == Gtk.ResponseType.OK:
+            for (k, _) in Config.getInstance().items():
+                Config.getInstance().set(k, cfg.get_field(k))
+            Config.getInstance().write()
+        cfg.destroy()
+        API.getInstance().reset()
 
     def search(self, e=None):
-        res = Ask(self, self.lang.get("Gtk.search.dialog.title"),
-                  self.lang.get("Gtk.search.dialog.text"))
+        res = Ask(self, Lang.getInstance().get("Gtk.search.dialog.title"),
+                  Lang.getInstance().get("Gtk.search.dialog.text"))
         if res.is_ok():
-            keys = self.store.find_by_attr(res.getResponse())
+            keys = API.getInstance().find_by_attr(res.getResponse())
             if len(keys) > 0:
                 key = keys[0]
             else:
@@ -355,7 +368,7 @@ class Boot(Gtk.Window):
 
 
     def updateui(self):
-        #self.store.refresh()
+        #API.getInstance().refresh()
         self.call_select = False
         self.treeStore.clear()
         self.populate()
@@ -370,13 +383,13 @@ class Boot(Gtk.Window):
                          priority=GLib.PRIORITY_LOW)
 
     def delete_entry(self, widget):
-        r = AskConfirmation(self,  self.lang.get("Gtk.delete.dialog.text") +
-                            self.store.get(DB_BASE, self.selection[0], KEY_NAME))
+        r = AskConfirmation(self,  Lang.getInstance().get("Gtk.delete.dialog.text") +
+                            API.getInstance().get(DB_BASE, self.selection[0], KEY_NAME))
         if r.is_ok():
             if len(self.selection) > 1:
-                self.store.delete(self.selection[1], self.selection[0])
+                API.getInstance().delete(self.selection[1], self.selection[0])
             else:
-                self.store.delete(None, self.selection[0])
+                API.getInstance().delete(None, self.selection[0])
             self.refresh()
 
     def drag(self, widget, elm):
@@ -454,15 +467,15 @@ class Boot(Gtk.Window):
         
     def populate(self, lst=None, parent=None):
         if lst == None:
-            lst = self.store.get_table("structure")
+            lst = API.getInstance().get_table("structure")
         for key in lst.keys():
             alert = self.check_status(key)
             row = self.treeStore.append(
-                parent, [key, self.store.get(DB_BASE, key, KEY_NAME), alert])
+                parent, [key, API.getInstance().get(DB_BASE, key, KEY_NAME), alert])
             self.populate(lst[key], row)
 
     def check_status(self, elm):
-        #alerts = self.store.get("alert", elm)
+        #alerts = API.getInstance().get("alert", elm)
         r = self.status_icons["alert.none"]
         # for e in alerts:
         #     try:
@@ -479,7 +492,7 @@ class Boot(Gtk.Window):
         return r
 
     def check_alerts(self):
-        alerts = self.store.get_table(DB_ALERT)
+        alerts = API.getInstance().get_table(DB_ALERT)
         self.dashStore.clear()
         fatal = 0
         msg = ""
@@ -488,15 +501,15 @@ class Boot(Gtk.Window):
             for lkey in alerts[key]:
                 if alerts[key][lkey]["severity"] == 0:
                     self.dashStore.append(
-                        ["#2396a6", self.status_icons[lkey], self.store.get(DB_BASE, key, KEY_NAME), str(alerts[key][lkey]["content"])])
+                        ["#2396a6", self.status_icons[lkey], API.getInstance().get(DB_BASE, key, KEY_NAME), str(alerts[key][lkey]["content"])])
                 else:
                     self.dashStore.prepend(
-                        ["#d03d3c", self.status_icons[lkey], self.store.get(DB_BASE, key, KEY_NAME), str(alerts[key][lkey]["content"])])
+                        ["#d03d3c", self.status_icons[lkey], API.getInstance().get(DB_BASE, key, KEY_NAME), str(alerts[key][lkey]["content"])])
                     fatal += 1
                     if key not in self.alerts:
                         self.alerts[key] = dict()
                     if lkey not in self.alerts[key]:
-                        msg += self.store.get(DB_BASE, key, KEY_NAME)
+                        msg += API.getInstance().get(DB_BASE, key, KEY_NAME)
                         msg += " : " + str(alerts[key][lkey]["content"])
                         msg += "\n"
                         notif = True
@@ -511,14 +524,14 @@ class Boot(Gtk.Window):
                     if lkey not in alerts[key]:
                         del self.alerts[key][lkey]
 
-        self.dashTitle.set_text(self.lang.get(
+        self.dashTitle.set_text(Lang.getInstance().get(
             "Gtk.notebook.dash.title").replace("$value", str(fatal)))
         self.dash.show_all()
 
     def page_change(self, e, n, v):
         if len(self.selection) > 0:
             if v == self.TAB_GRAPH:
-                self.current_doc = self.graph.generate()
+                self.current_doc = self.graph.generate(self.selection)
             elif v == self.TAB_TERMINAL:
                 self.open_internal_terminal()
             GLib.idle_add(self.canvas.queue_draw,
@@ -528,7 +541,7 @@ class Boot(Gtk.Window):
         if len(elm) > 0:
             ref = False
             if self.notebook.get_current_page() == self.TAB_GRAPH:
-                self.current_doc = self.graph.generate()
+                self.current_doc = self.graph.generate(self.selection)
                 ref = True
             elif self.notebook.get_current_page() == self.TAB_TERMINAL and changed == True:
                 self.open_internal_terminal()
@@ -548,14 +561,8 @@ class Boot(Gtk.Window):
         self._stop = Event()
         self.call_select = True
         self.alerts = dict()
-        self.lang = LangStore(self)
-        self.lang.read()
-        self.config = ConfigStore(self)
-        self.config.read()
-        self.api = API(self)
         self.run()
-        self.store = Database(self)
-        self.terminalbox = Terminal(self)
+        self.terminalbox = Terminal()
         self.prepare()
         self.build()
         self.runner = Thread(target=self.server_refresh)
@@ -589,7 +596,7 @@ class Boot(Gtk.Window):
         self.selection_changed(None)
 
     def export(self, _):
-        Export(self)
+        MDExport(self)
 
     def exit(self):
         self._stop.set()
@@ -598,29 +605,29 @@ class Boot(Gtk.Window):
         auth = True
         while auth:
             auth = False
-            if not self.api.is_server_online():
-                self.config.check()
-                self.api.reset()
+            if not API.getInstance().is_server_online():
+                Config.getInstance().check()
+                API.getInstance().reset()
             try:
                 self.auth_gui()
             except ValueError :
-                Error(self,  self.lang.get("gtk.serverdown.dialog.text"))
+                Error(self,  Lang.getInstance().get("gtk.serverdown.dialog.text"))
                 exit(0)
-            if not self.api.auth_check():
+            if not API.getInstance().auth_check():
                 auth = AskConfirmation(
-                    self,  self.lang.get("gtk.loginfailed.dialog.text")).is_ok()
+                    self,  Lang.getInstance().get("gtk.loginfailed.dialog.text")).is_ok()
                 if not auth:
                     exit(0)
 
     def auth_gui(self):
-        if not self.api.auth_check():
-            u = Ask(None, self.lang.get("gtk.login.dialog.title"),
-                    self.lang.get("gtk.login.dialog.username"))
+        if not API.getInstance().auth_check():
+            u = Ask(None, Lang.getInstance().get("gtk.login.dialog.title"),
+                    Lang.getInstance().get("gtk.login.dialog.username"))
             if u.is_ok():
-                p = Ask(None, self.lang.get("gtk.login.dialog.title"),
-                        self.lang.get("gtk.login.dialog.password"), False)
+                p = Ask(None, Lang.getInstance().get("gtk.login.dialog.title"),
+                        Lang.getInstance().get("gtk.login.dialog.password"), False)
                 if p.is_ok():
-                    self.api.auth_user(u.getResponse(), p.getResponse())
+                    API.getInstance().auth_user(u.getResponse(), p.getResponse())
 
     def selection_changed(self, widget):
         if self.call_select:
