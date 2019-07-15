@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 __author__ = 'Samir KHERRAZ'
 __copyright__ = '(c) Samir HERRAZ 2018-2019'
-__version__ = '1.2.0'
+__version__ = '1.3.0'
 __licence__ = 'GPLv3'
 
 
@@ -78,19 +78,8 @@ class API:
         except:
             return False
 
-    def get_table(self, table):
-        data = self.__post("data/get/"+table)
-        try:
-            if not data["AUTHORIZATION"]:
-                return None
-        except:
-            return data
-
-    def get(self, table, id, attr=None):
-        ressource = "data/get/"+table+"/"+id
-        if attr is not None:
-            ressource += "/"+attr
-        data = self.__post(ressource)
+    def get(self, *args):
+        data = self.__post("data/get/"+"/".join(args))
         try:
             if not data["AUTHORIZATION"]:
                 return None

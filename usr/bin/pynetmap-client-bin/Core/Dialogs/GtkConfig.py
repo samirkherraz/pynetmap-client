@@ -1,24 +1,26 @@
 #!/usr/bin/env python
 __author__ = 'Samir KHERRAZ'
 __copyright__ = '(c) Samir HERRAZ 2018-2019'
-__version__ = '1.2.0'
+__version__ = '1.3.0'
 __licence__ = 'GPLv3'
 from gi.repository import Gtk, Gdk, GLib
 from Core.Config import Config
 from Core.Lang import Lang
+
+
 class GtkConfig(Gtk.Dialog):
     def prepare(self):
         self._fields = dict()
-        self.set_title("Configuration")
+        self.set_title(Lang.getInstance().get("gtk.config.title"))
         self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
         self.set_default_size(600, 400)
 
     def build(self, keylist):
-        self.root = Gtk.VBox(expand=True)
+        self.root = Gtk.VBox(expand=True, margin=12)
         swin = Gtk.ScrolledWindow()
         swin.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         swin.add_with_viewport(self.root)
-        self.vbox.add(swin)
+        self.get_content_area().add(swin)
         self.grid = Gtk.Table(len(keylist)+1, 2, False)
         self.grid.set_row_spacings(12)
         i = 0
@@ -38,7 +40,6 @@ class GtkConfig(Gtk.Dialog):
             self._fields[id].set_text(value)
         except:
             pass
-    
 
     def get_field(self, id):
         try:
@@ -47,7 +48,7 @@ class GtkConfig(Gtk.Dialog):
             return None
 
     def __init__(self):
-        Gtk.Dialog.__init__(self, "Configuration", None, flags=Gtk.DialogFlags.MODAL,
+        Gtk.Dialog.__init__(self, Lang.getInstance().get("gtk.config.title"), None, flags=Gtk.DialogFlags.MODAL,
                             buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK,
                                      Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
         self.prepare()

@@ -245,7 +245,7 @@ class Graph:
 
     def generate_all_map(self):
         st = self.header
-        elm = API.getInstance().get_table("structure")
+        elm = API.getInstance().get("structure")
         for k in elm:
             st += self.generate_node_recur(k, False, 0)
 

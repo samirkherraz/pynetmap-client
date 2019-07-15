@@ -1,36 +1,37 @@
 #!/usr/bin/env python
 __author__ = 'Samir KHERRAZ'
 __copyright__ = '(c) Samir HERRAZ 2018-2019'
-__version__ = '1.2.0'
+__version__ = '1.3.0'
 __licence__ = 'GPLv3'
 from gi.repository import Gtk, Gdk, GLib
 from Constants import *
 from Core.Api import API
 from Core.Lang import Lang
+
+
 class GtkForm(Gtk.Dialog):
 
     def prepare(self):
         self._sfields = [KEY_TYPE, "parent"]
         self._fields = dict()
         self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
-        self.set_default_size(600, 400)
+        self.set_default_size(800, 500)
 
     def build(self, template=None):
         self._fields[KEY_TYPE] = Gtk.ComboBoxText()
-        for key in API.getInstance().get_table("schema"):
+        for key in API.getInstance().get(DB_SCHEMA):
             self._fields[KEY_TYPE].append_text(key)
         self._fields[KEY_TYPE].connect('changed', self.on_changed)
 
-        toolbar = Gtk.HBox()
+        toolbar = Gtk.HBox( margin=12)
         toolbar.add(self._fields[KEY_TYPE])
-        self.root = Gtk.VBox(expand=True, spacing=12)
-        self.vbox.pack_start(toolbar, False, True, 0)
+        self.root = Gtk.VBox(expand=True, spacing=12, margin=12)
+        self.get_content_area().add(toolbar)
         swin = Gtk.ScrolledWindow()
         swin.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         swin.add_with_viewport(self.root)
-        self.vbox.pack_end(swin, False, True, 0)
+        self.get_content_area().add(swin)
         self._fields[KEY_TYPE].set_active(0)
-
     def set_parent(self, value):
         try:
             self._fields["parent"].set_active_id(value)
@@ -42,7 +43,6 @@ class GtkForm(Gtk.Dialog):
             return self._fields["parent"].get_active_id()
         except:
             pass
-
 
     def get_fields(self):
         ret = dict()
@@ -106,11 +106,13 @@ class GtkForm(Gtk.Dialog):
                 self._has_parent = True
                 self._fields["parent"] = Gtk.ComboBoxText()
                 for el in elms:
-                    self._fields["parent"].append(el ,API.getInstance().get("base", el, KEY_NAME))
+                    self._fields["parent"].append(
+                        el, API.getInstance().get("base", el, KEY_NAME))
                 self._fields["parent"].set_active(0)
 
                 if template["Build"] == "MANUAL":
-                    label = Gtk.Label(Lang.getInstance().get("Gtk.field.parent"))
+                    label = Gtk.Label(
+                        Lang.getInstance().get("Gtk.field.parent"))
                     label.set_alignment(0, 0.5)
                     self.grid.attach(label, 0, 1, 0, 1)
                     self.grid.attach(self._fields["parent"], 1, 2, i, i+1)
@@ -149,7 +151,7 @@ class GtkForm(Gtk.Dialog):
 
     def on_changed(self, widget):
         active = self._fields[KEY_TYPE].get_active_text()
-        self.form(API.getInstance().get("schema", active ))
+        self.form(API.getInstance().get(DB_SCHEMA, active))
 
     def __init__(self, name, parent):
         Gtk.Dialog.__init__(self, name, parent, flags=Gtk.DialogFlags.MODAL,
@@ -157,4 +159,3 @@ class GtkForm(Gtk.Dialog):
                                      Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
         self.prepare()
         self.build()
-

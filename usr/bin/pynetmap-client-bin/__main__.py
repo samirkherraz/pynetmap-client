@@ -17,12 +17,12 @@ from Core.MDExport import MDExport
 from Constants import *
 from Core.Graph import Graph
 from Core.Terminal import Terminal
-from Core.Dialogs.GtkAdd import GtkAdd as Add
-from Core.Dialogs.GtkAsk import GtkAsk as Ask
-from Core.Dialogs.GtkConfirmation import GtkConfirmation as AskConfirmation
-from Core.Dialogs.GtkEdit import GtkEdit as Edit
-from Core.Dialogs.GtkError import GtkError as Error
-from Core.Dialogs.GtkNotify import GtkNotify as Notify
+from Core.Dialogs.GtkAdd import GtkAdd
+from Core.Dialogs.GtkAsk import GtkAsk
+from Core.Dialogs.GtkConfirmation import GtkConfirmation
+from Core.Dialogs.GtkEdit import GtkEdit
+from Core.Dialogs.GtkError import GtkError
+from Core.Dialogs.GtkNotify import GtkNotify 
 from Core.Dialogs.GtkConfig import GtkConfig
 
 
@@ -36,7 +36,6 @@ class TrayIcon(Gtk.StatusIcon):
         self.main = main
         pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size("/usr/share/pynetmap/icon.png",48,48)
         self.set_from_pixbuf(pixbuf)
-        #self.set_tooltip('PyNetMap')
         self.set_visible(True)
 
         self.menu = Gtk.Menu()
@@ -53,7 +52,6 @@ class TrayIcon(Gtk.StatusIcon):
         quit_item.connect("activate", self.quit)
         self.menu.append(quit_item)
 
-        self.menu.show_all()
 
         self.connect("activate", self.show_window)
         self.connect('popup-menu', self.icon_clicked)
@@ -62,11 +60,10 @@ class TrayIcon(Gtk.StatusIcon):
         self.main.present()    
 
     def icon_clicked(self, status, button, time):
-        
-        self.menu.popup(None, None, None, button, 0,0)
+        self.menu.show_all()
+        self.menu.popup(None, None, None, Gtk.StatusIcon.position_menu, button, time)
 
     def reload(self, widget,event=None):
-        API.getInstance().refresh()
         self.main.refresh()
 
     def quit(self, widget, event=None):
@@ -128,8 +125,8 @@ class Boot(Gtk.Window):
         while not self._stop.isSet():
             try:
                 if not API.getInstance().auth_check():
-                    Notify(self.ui.lang.get("Gtk.notify.connection.lost.title"),
-                            self.ui.lang.get("Gtk.notify.connection.lost.text"))
+                    # GtkNotify(self.ui.lang.get("Gtk.notify.connection.lost.title"),
+                    #         self.ui.lang.get("Gtk.notify.connection.lost.text"))
                     API.getInstance().auth()
                     raise Exception("AUTH")
 
@@ -324,7 +321,7 @@ class Boot(Gtk.Window):
         API.getInstance().reset()
 
     def search(self, e=None):
-        res = Ask(self, Lang.getInstance().get("Gtk.search.dialog.title"),
+        res = GtkAsk(self, Lang.getInstance().get("Gtk.search.dialog.title"),
                   Lang.getInstance().get("Gtk.search.dialog.text"))
         if res.is_ok():
             keys = API.getInstance().find_by_attr(res.getResponse())
@@ -361,10 +358,10 @@ class Boot(Gtk.Window):
         return False
 
     def new_entry(self, widget):
-        Add(self)
+        GtkAdd(self)
         self.refresh()
     def edit_entry(self, widget):
-        Edit(self)
+        GtkEdit(self, self.selection)
 
 
     def updateui(self):
@@ -383,7 +380,7 @@ class Boot(Gtk.Window):
                          priority=GLib.PRIORITY_LOW)
 
     def delete_entry(self, widget):
-        r = AskConfirmation(self,  Lang.getInstance().get("Gtk.delete.dialog.text") +
+        r = GtkConfirmation(self,  Lang.getInstance().get("Gtk.delete.dialog.text") +
                             API.getInstance().get(DB_BASE, self.selection[0], KEY_NAME))
         if r.is_ok():
             if len(self.selection) > 1:
@@ -467,7 +464,7 @@ class Boot(Gtk.Window):
         
     def populate(self, lst=None, parent=None):
         if lst == None:
-            lst = API.getInstance().get_table("structure")
+            lst = API.getInstance().get("structure")
         for key in lst.keys():
             alert = self.check_status(key)
             row = self.treeStore.append(
@@ -492,7 +489,7 @@ class Boot(Gtk.Window):
         return r
 
     def check_alerts(self):
-        alerts = API.getInstance().get_table(DB_ALERT)
+        alerts = API.getInstance().get(DB_ALERT)
         self.dashStore.clear()
         fatal = 0
         msg = ""
@@ -515,7 +512,7 @@ class Boot(Gtk.Window):
                         notif = True
                         self.alerts[key][lkey] = True
         if notif:
-            Notify("Alerts", msg)
+            GtkNotify("Alerts", msg)
         for key in self.alerts.keys():
             if key not in alerts:
                 del self.alerts[key]
@@ -610,20 +607,20 @@ class Boot(Gtk.Window):
             try:
                 self.auth_gui()
             except ValueError :
-                Error(self,  Lang.getInstance().get("gtk.serverdown.dialog.text"))
+                GtkError(self,  Lang.getInstance().get("gtk.serverdown.dialog.text"))
                 exit(0)
             if not API.getInstance().auth_check():
-                auth = AskConfirmation(
+                auth = GtkConfirmation(
                     self,  Lang.getInstance().get("gtk.loginfailed.dialog.text")).is_ok()
                 if not auth:
                     exit(0)
 
     def auth_gui(self):
         if not API.getInstance().auth_check():
-            u = Ask(None, Lang.getInstance().get("gtk.login.dialog.title"),
+            u = GtkAsk(None, Lang.getInstance().get("gtk.login.dialog.title"),
                     Lang.getInstance().get("gtk.login.dialog.username"))
             if u.is_ok():
-                p = Ask(None, Lang.getInstance().get("gtk.login.dialog.title"),
+                p = GtkAsk(None, Lang.getInstance().get("gtk.login.dialog.title"),
                         Lang.getInstance().get("gtk.login.dialog.password"), False)
                 if p.is_ok():
                     API.getInstance().auth_user(u.getResponse(), p.getResponse())

@@ -13,7 +13,7 @@ class MDExport:
     def __init__(self, parent):
        
         self.filesystem = open("/tmp/export-"+str(os.getuid())+".md", "w")
-        st = self.write(API.getInstance().get_table("structure"), 0)
+        st = self.write(API.getInstance().get("structure"), 0)
         self.filesystem.write(st)
         self.filesystem.close()
         os.system("xdg-open /tmp/export-"+str(os.getuid())+".md &")
