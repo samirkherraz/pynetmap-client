@@ -100,14 +100,14 @@ class GtkForm(Gtk.Dialog):
             self.grid = Gtk.Table(len(template["Fields"])+1, 2, False)
             self.grid.set_row_spacings(12)
             i = 0
-            elms = API.getInstance().find_attr(
+            elms = API.getInstance().find(DB_SCHEMA,
                 template["Parents"], "schema") if template["Parents"] != None else []
             if len(elms) > 0:
                 self._has_parent = True
                 self._fields["parent"] = Gtk.ComboBoxText()
                 for el in elms:
                     self._fields["parent"].append(
-                        el, API.getInstance().get("base", el, KEY_NAME))
+                        el, API.getInstance().get(DB_BASE , el, KEY_NAME))
                 self._fields["parent"].set_active(0)
 
                 if template["Build"] == "MANUAL":

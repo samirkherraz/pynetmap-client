@@ -6,6 +6,7 @@ __licence__ = 'GPLv3'
 
 import os
 import time
+import getpass
 from datetime import datetime, timedelta
 from Constants import *
 from gi.repository import Gtk, Gdk, GLib,GdkPixbuf
@@ -13,13 +14,18 @@ from Core.Api import API
 from Core.Lang import Lang
 class Graph:
     def __init__(self):
+        self.format = "jpeg"
+        self.tmppath = "/tmp/pynetmap-"+getpass.getuser()+"/"
+        self.tmpfile = self.tmppath+"graph.dot"
+        self.tmpfilefmt = self.tmppath+"graph."+self.format
+
+        print(self.tmppath)
         try:
-            os.mkdir("/tmp/pynetmap/")
+            os.mkdir(self.tmppath)
         except:
             pass
         self.header = "Digraph{ \nnode [style=\"filled, rounded\",fillcolor=\"#eeeeee\",fontname=\"Sans\", fixedsize=false,shape=plaintext];\ngraph [splines=\"line\", dpi = 196, pad=\"1\", ranksep=\"1\",nodesep=\"0.5\"]\n"
         self.footer = "}"
-        self.format = "jpeg"
 
     def edge(self, a, b, lvl=0):
         i = 0
@@ -31,24 +37,27 @@ class Graph:
         return s
 
     def calldot(self, filecontent):
-        file = open("/tmp/pynetmap/graph.dot", "w")
+        file = open(self.tmpfile, "w")
         file.write(filecontent)
         file.close()
         os.system("dot -T"+self.format +
-                  " /tmp/pynetmap/graph.dot -o  /tmp/pynetmap/graph."+self.format + "; exit")
-        r = GdkPixbuf.Pixbuf.new_from_file("/tmp/pynetmap/graph."+self.format)
-        #os.system("rm /tmp/pynetmap/*")
+                  " "+self.tmpfile+" -o  "+self.tmpfilefmt + "; exit")
+        r = GdkPixbuf.Pixbuf.new_from_file(self.tmpfilefmt)
+        os.system("rm "+ self.tmppath+"*")
         return r
 
     def node(self, key, detailed, lvl=0):
+        base = API.getInstance().get(DB_BASE, key)
+        if base is None:
+            base = {}
+        info = API.getInstance().get(DB_MODULE, key)
+        if info is None:
+            info = {}
+        vmstate = info.get(KEY_STATUS)
 
-        vmstate = API.getInstance().get(
-            "module", key, KEY_STATUS)
+        vmicon = self.tmpschema.get(base.get(KEY_TYPE)).get("Icon")
 
-        vmicon = API.getInstance().get(
-            "schema", API.getInstance().get("base", key, KEY_TYPE), "Icon")
-
-        vmname = API.getInstance().get("base", key, KEY_NAME)
+        vmname = base.get(KEY_NAME)
 
         icon = vmicon+".png"
         try:
@@ -70,15 +79,13 @@ class Graph:
         s += "<TR><TD port='IMG' colspan='2'><IMG SRC='"+icon+"' /></TD></TR>"
         s += "<TR><TD colspan='2' ><b>" + vmname+"</b></TD></TR>"
         if detailed:
-            vmfields = API.getInstance().get(
-                "schema", API.getInstance().get("base", key, KEY_TYPE))["Fields"]
+            vmfields = self.tmpschema.get(base.get(KEY_TYPE)).get("Fields", [])
             
-            info = API.getInstance().get("module", key)
             table = dict()
             table["base"] = []
             table["baseinfo"] = []
             table["basemultiline"] = []
-            for k in API.getInstance().get("base", key).keys():
+            for k in base:
                     if k in vmfields.keys() and vmfields[k] == "LONG":
                         table["basemultiline"].append(k)
                     else:
@@ -101,10 +108,10 @@ class Graph:
             # History
             tblhistory = "<TABLE border='0' cellborder='0' cellspacing='5'>"
             if KEY_MONITOR_HISTORY in info:
-                for k in info[KEY_MONITOR_HISTORY]:
+                for k in info.get(KEY_MONITOR_HISTORY, []):
                     
                     name = (vmname+k+".png").replace(" ", "").lower()
-                    self.subgraph(info[KEY_MONITOR_HISTORY][k], name, Lang.getInstance().get(k), (k == KEY_STATUS) )
+                    self.subgraph(info.get(KEY_MONITOR_HISTORY).get(k), name, Lang.getInstance().get(k), (k == KEY_STATUS) )
                     tblhistory += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><IMG SRC='/tmp/pynetmap/" + \
                         name+"' /></TD></TR>"
                     tblhistoryb = True
@@ -113,9 +120,9 @@ class Graph:
             tblbase = "<TABLE border='0' cellborder='0' cellspacing='5'>"
             for k in table["base"]:
                 if ".password" in k:
-                    rst = "*" * len(str(API.getInstance().get("base", key, k)))
+                    rst = "*" * len(str(base.get(k)))
                 else:
-                    rst = str(API.getInstance().get("base", key, k))
+                    rst = str(base.get(k))
                     rst = rst.replace('"', '\"')
                 tblbase += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><B>"+Lang.getInstance().get(k) + \
                     "</B></TD><TD VALIGN='TOP' ALIGN='LEFT'>"+rst + "</TD></TR>"
@@ -123,15 +130,15 @@ class Graph:
             for k in table["baseinfo"]:
                 if k == KEY_LAST_UPDATE:
                     rst = "-" + \
-                        str(timedelta(seconds=int(time.time() - info[k])))
+                        str(timedelta(seconds=int(time.time() - info.get(k))))
                 else:
-                    rst = str(info[k])
+                    rst = str(info.get(k))
                     rst = rst.replace('"', '\"')
                 tblbase += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><B>"+Lang.getInstance().get(k) + \
                     "</B></TD><TD VALIGN='TOP' ALIGN='LEFT'>"+rst + "</TD></TR>"
                 tblbaseb = True
             for k in table["basemultiline"]:
-                rst = str(API.getInstance().get("base", key, k))
+                rst = str(base.get(k))
                 rst = rst.replace('\n', "<BR ALIGN='LEFT'/>")
                 tblbase += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><B>"+Lang.getInstance().get(k) + \
                     "</B></TD><TD VALIGN='TOP' ALIGN='LEFT'>"+rst + "</TD></TR>"
@@ -142,8 +149,8 @@ class Graph:
             # List
             tbllist = "<TABLE border='0' cellborder='0' cellspacing='5'>"
             if KEY_MONITOR_LISTS in info:
-                for k in info[KEY_MONITOR_LISTS]:
-                    rst = info[KEY_MONITOR_LISTS][k]
+                for k in info.get(KEY_MONITOR_LISTS):
+                    rst = info.get(KEY_MONITOR_LISTS).get(k)
                     if len(rst) > 0:
                         tbllist += "<TR><TD VALIGN='TOP' ALIGN='LEFT'>"
 
@@ -228,7 +235,7 @@ class Graph:
         return st
 
     def generate(self, selection):
-
+        self.tmpschema = API.getInstance().get(DB_SCHEMA)
         st = self.header
         st += self.node(selection[0], True)
         i = 1

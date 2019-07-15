@@ -6,7 +6,6 @@ __licence__ = 'GPLv3'
 from gi.repository import Gtk, Gdk, GLib
 
 
-
 class GtkError(Gtk.MessageDialog):
     def __init__(self, parent, msg):
         Gtk.MessageDialog.__init__(self, parent,
@@ -14,4 +13,3 @@ class GtkError(Gtk.MessageDialog):
                                    Gtk.ButtonsType.OK, msg)
         self.run()
         self.destroy()
-

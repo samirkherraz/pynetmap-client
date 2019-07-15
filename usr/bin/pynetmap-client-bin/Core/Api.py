@@ -21,8 +21,8 @@ class API:
         self.session.verify = True
         self.reset()
 
-    def __post(self, ressource, data={}):
-            ret = self.session.post(self.url+ressource, cookies=self.cookies,  json=json.dumps(data)).json()
+    def __post(self, ressource, data={}, timeout=None):
+            ret = self.session.post(self.url+ressource, cookies=self.cookies,  json=json.dumps(data), timeout=timeout).json()
             print(ressource)
             status=ret["status"]
             content=""
@@ -50,7 +50,7 @@ class API:
 
     def is_server_online(self):
         try:
-            self.__post(self.url+"ping")
+            self.__post(self.url+"ping", None, 1)
             return True
         except Exception as e:
             print(e)
@@ -90,11 +90,11 @@ class API:
         self.__post("data/set/"+table+"/"+id,store)
 
 
-    def find_attr(self, value, attr=None):
+    def find(self,table, value, attr=None):
         if attr != None:
-            url ="data/find/attr/"+attr+"/"+value
+            url ="data/find/attr/"+table+"/"+attr+"/"+value
         else:
-            url = "data/find/attr/"+value
+            url = "data/find/attr/"+table+"/"+value
 
         data = self.__post(url)
         try:

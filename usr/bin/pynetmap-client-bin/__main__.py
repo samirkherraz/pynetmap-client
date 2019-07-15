@@ -321,10 +321,10 @@ class Boot(Gtk.Window):
         API.getInstance().reset()
 
     def search(self, e=None):
-        res = GtkAsk(self, Lang.getInstance().get("Gtk.search.dialog.title"),
-                  Lang.getInstance().get("Gtk.search.dialog.text"))
+        res = GtkAsk(self, Lang.getInstance().get("Gtk.search.title"),
+                  Lang.getInstance().get("Gtk.search.text"))
         if res.is_ok():
-            keys = API.getInstance().find_by_attr(res.getResponse())
+            keys = API.getInstance().find(DB_BASE,res.getResponse())
             if len(keys) > 0:
                 key = keys[0]
             else:
@@ -365,22 +365,21 @@ class Boot(Gtk.Window):
 
 
     def updateui(self):
-        #API.getInstance().refresh()
         self.call_select = False
         self.treeStore.clear()
         self.populate()
         self.tree.expand_all()
-        self.call_select = True
         if len(self.selection) > 0:
             if self.search_function(self.selection[0], [0]):
                     self.selection_changed(None)
+        self.call_select = True
 
     def refresh(self):
         GLib.idle_add(self.updateui,
                          priority=GLib.PRIORITY_LOW)
 
     def delete_entry(self, widget):
-        r = GtkConfirmation(self,  Lang.getInstance().get("Gtk.delete.dialog.text") +
+        r = GtkConfirmation(self,  Lang.getInstance().get("Gtk.delete.text") +
                             API.getInstance().get(DB_BASE, self.selection[0], KEY_NAME))
         if r.is_ok():
             if len(self.selection) > 1:
@@ -462,14 +461,17 @@ class Boot(Gtk.Window):
         cr.paint()
     
         
-    def populate(self, lst=None, parent=None):
+    def populate(self,names=None, lst=None,parent=None):
         if lst == None:
-            lst = API.getInstance().get("structure")
+            lst = API.getInstance().get(DB_STRUCT)
+        if names == None:
+            names = API.getInstance().get(DB_BASE)
+        
         for key in lst.keys():
             alert = self.check_status(key)
             row = self.treeStore.append(
-                parent, [key, API.getInstance().get(DB_BASE, key, KEY_NAME), alert])
-            self.populate(lst[key], row)
+                parent, [key, names[key][KEY_NAME], alert])
+            self.populate(names,lst[key], row)
 
     def check_status(self, elm):
         #alerts = API.getInstance().get("alert", elm)
@@ -599,29 +601,32 @@ class Boot(Gtk.Window):
         self._stop.set()
 
     def run(self):
-        auth = True
-        while auth:
-            auth = False
+
+        if not API.getInstance().is_server_online():
+            GtkError(self,  Lang.getInstance().get("gtk.serverdown.text"))
+            self.edit_config()
             if not API.getInstance().is_server_online():
-                self.edit_config()
-            try:
-                self.auth_gui()
-            except ValueError :
-                GtkError(self,  Lang.getInstance().get("gtk.serverdown.dialog.text"))
-                exit(0)
-            if not API.getInstance().auth_check():
-                auth = GtkConfirmation(
-                    self,  Lang.getInstance().get("gtk.loginfailed.dialog.text")).is_ok()
-                if not auth:
+                GtkError(self,  Lang.getInstance().get("gtk.serverdown.text"))
+                exit(1)
+        
+        for _ in range(3):
+            self.auth_gui()
+            if API.getInstance().auth_check():
+                break
+            else:
+                retry = GtkConfirmation(
+                    self,  Lang.getInstance().get("gtk.loginfailed.text")).is_ok()
+                if not retry:
                     exit(0)
+
 
     def auth_gui(self):
         if not API.getInstance().auth_check():
-            u = GtkAsk(None, Lang.getInstance().get("gtk.login.dialog.title"),
-                    Lang.getInstance().get("gtk.login.dialog.username"))
+            u = GtkAsk(None, Lang.getInstance().get("gtk.login.title"),
+                    Lang.getInstance().get("gtk.login.username"))
             if u.is_ok():
-                p = GtkAsk(None, Lang.getInstance().get("gtk.login.dialog.title"),
-                        Lang.getInstance().get("gtk.login.dialog.password"), False)
+                p = GtkAsk(None, Lang.getInstance().get("gtk.login.title"),
+                        Lang.getInstance().get("gtk.login.password"), False)
                 if p.is_ok():
                     API.getInstance().auth_user(u.getResponse(), p.getResponse())
 

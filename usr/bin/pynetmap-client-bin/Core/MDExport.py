@@ -19,7 +19,7 @@ class MDExport:
         os.system("xdg-open /tmp/export-"+str(os.getuid())+".md &")
 
     def write_node(self, key, spc):
-        el = API.getInstance().get("base", key)
+        el = API.getInstance().get(DB_BASE , key)
         s = "\n"
         s += spc+" "+el[KEY_TYPE]+" - "+el[KEY_NAME]+"\n"
         hidden = [KEY_SSH_PASSWORD, KEY_TYPE, KEY_NAME, KEY_SSH_USER, KEY_SSH_PORT,
