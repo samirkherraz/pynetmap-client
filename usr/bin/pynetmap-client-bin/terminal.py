@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 __author__ = 'Samir KHERRAZ'
-__copyright__ = '(c) Samir HERRAZ 2018-2018'
-__version__ = '1.1.0'
+__copyright__ = '(c) Samir HERRAZ 2018-2019'
+__version__ = '1.2.0'
 __licence__ = 'GPLv3'
 
 import os
@@ -10,8 +10,8 @@ import socket
 import threading
 from subprocess import Popen
 from urllib.request import urlparse
-
-from gi.repository import Gtk, Gdk, GLib,Vte
+from threading import Lock
+from gi.repository import Gtk, Gdk, GLib, Vte
 
 from const import TERMINAL
 
@@ -20,11 +20,12 @@ class Terminal:
     def __init__(self, ui):
         self.terminals = dict()
         self.ui = ui
+        self._lock = Lock()
 
     def reload_access(self):
-        if self.ui.api.get_access("users.privilege.terminal"):
-            self.sshuser = self.ui.api.get("server", "server.ssh.user")
-            self.sshpassword = self.ui.api.get("server", "server.ssh.password")
+        if self.ui.api.get_access("terminal"):
+            self.sshuser = self.ui.api.get("server", "ssh", "user")
+            self.sshpassword = self.ui.api.get("server", "ssh", "password")
         else:
             self.sshuser = None
             self.sshpassword = None
@@ -33,7 +34,7 @@ class Terminal:
         cmd = self.build_cmd(key)
         if cmd != None:
             terminal = Vte.Terminal()
-            
+
             self.terminals[key] = terminal
             terminal.spawn_sync(
                 Vte.PtyFlags.DEFAULT,
@@ -43,11 +44,11 @@ class Terminal:
                 GLib.SpawnFlags.DO_NOT_REAP_CHILD,
                 None,
                 None,
-                )
+            )
             swin = Gtk.ScrolledWindow()
             swin.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
             swin.add_with_viewport(terminal)
-            
+
             return swin
         else:
             return None
@@ -88,7 +89,7 @@ class Terminal:
 
     def build_cmd(self, key):
         try:
-            cmd = TERMINAL
+            cmd = "sshpass -p [SSHPassword] ssh -p [SSHPort] -tt -o StrictHostKeyChecking=no [SSHUsername]@[Server] [ID] "
             cmd = cmd.replace("[Server]", str(
                 urlparse(self.ui.config.get("server")).hostname))
             cmd = cmd.replace("[SSHUsername]", self.sshuser)
@@ -104,10 +105,8 @@ class Terminal:
             return None
 
     def internal(self, id, force=False):
-        for key in self.terminals.keys():
-            if key == id:
-                if force == True:
-                    del self.terminals[key]
+        if force == True:
+            self.terminals[id] = self.build(id)
         self.reload_access()
         if id not in self.terminals.keys() or self.terminals[id] == None:
             self.terminals[id] = self.build(id)
@@ -119,3 +118,6 @@ class Terminal:
         if cmd != None:
             os.system(str(self.ui.config.get("TerminalCommand")
                           ).strip()+' -e "'+cmd+'" &')
+
+
+

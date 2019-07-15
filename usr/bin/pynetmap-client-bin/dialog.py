@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 __author__ = 'Samir KHERRAZ'
-__copyright__ = '(c) Samir HERRAZ 2018-2018'
-__version__ = '1.1.0'
+__copyright__ = '(c) Samir HERRAZ 2018-2019'
+__version__ = '1.2.0'
 __licence__ = 'GPLv3'
 from gi.repository import Gtk, Gdk, GLib
 
@@ -114,7 +114,7 @@ class Form(Gtk.Dialog):
                 self._fields[id].set_text(value)
             elif type(self._fields[id]) is Gtk.TextBuffer:
                 self._fields[id].set_text(value, len(value))
-            elif type(self._fields[id]) is Gtk.ComboBox:
+            elif type(self._fields[id]) is Gtk.ComboBoxText:
                 i = 0
                 self._fields[id].set_active(i)
                 while self._fields[id].get_active_text() != value and self._fields[id].get_active_text() != None:
@@ -164,7 +164,7 @@ class Form(Gtk.Dialog):
                 self._has_parent = True
                 self._fields["parent"] = Gtk.ComboBoxText()
                 for el in elms:
-                    self._fields["parent"].append(el ,self.ui.store.get_attr("base", el, KEY_NAME))
+                    self._fields["parent"].append(el ,self.ui.store.get("base", el, KEY_NAME))
                 self._fields["parent"].set_active(0)
 
                 if template["Build"] == "MANUAL":

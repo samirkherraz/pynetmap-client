@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 __author__ = 'Samir KHERRAZ'
-__copyright__ = '(c) Samir HERRAZ 2018-2018'
-__version__ = '1.1.0'
+__copyright__ = '(c) Samir HERRAZ 2018-2019'
+__version__ = '1.2.0'
 __licence__ = 'GPLv3'
 
 
@@ -23,37 +23,49 @@ class API:
         self.session.verify = True
         self.reset()
 
+    def __post(self, ressource, data={}):
+            ret = self.session.post(self.url+ressource, cookies=self.cookies,  json=json.dumps(data)).json()
+            print(ressource)
+            status=ret["status"]
+            content=""
+            data=""
+            if status == "OK":
+                try:
+                    content=ret["content"]
+                    return content
+                except:
+                    print(ret)
+                    return None
+            else:
+                print(data)
+                print(content)
+                return None
     def reset(self):
-        self.url = self.ui.config.get("server")+"/"
+        self.url=self.ui.config.get("server")+"/"
 
-    def tunnel_relaod(self):
-        self.session.post(self.url+"core/tunnel/reload",
-                          json=json.dumps(self.d))
 
     def auth_user(self, username, password):
-        self.d = dict()
-        self.d["username"] = username
-        self.d["password"] = hashlib.sha256(password.encode()).hexdigest()
+        self.d=dict()
+        self.d["username"]=username
+        self.d["password"]=hashlib.sha256(password.encode()).hexdigest()
         return self.auth()
 
     def is_server_online(self):
         try:
-            self.session.post(self.url, timeout=1)
+            self.__post(self.url)
             return True
-        except ValueError as e:
+        except Exception as e:
             print(e)
             return False
 
     def get_access(self, prop):
-        t = self.session.post(self.url+"core/auth/access/"+prop,
-                              cookies=self.cookies).json()["content"]
+        t=self.__post("auth/access/"+prop)
         return t["AUTHORIZATION"]
 
     def auth(self):
-        t = self.session.post(self.url+"core/auth/login",
-                              json=json.dumps(self.d)).json()["content"]
-        if t["TOKEN"] != None:
-            self.cookies = {"TOKEN": t["TOKEN"],
+        t=self.__post("auth/login", self.d)
+        if t["TOKEN"] is not None:
+            self.cookies={"TOKEN": t["TOKEN"],
                             "USERNAME": self.d["username"]}
             Notify(self.ui.lang.get("Gtk.notify.connection.success.title"),
                    self.ui.lang.get("Gtk.notify.connection.success.text"))
@@ -64,27 +76,28 @@ class API:
         return False
 
     def auth_check(self):
-
-        t = self.session.post(self.url+"core/auth/check",
-                              cookies=self.cookies).json()["content"]
-        print(t)
         try:
-            return t["AUTHORIZATION"]
+            t = self.__post("auth/check")
+            try:
+                return t["AUTHORIZATION"]
+            except:
+                return False
         except:
             return False
 
     def get_table(self, table):
-        data = self.session.post(self.url+"core/data/get/"+table,
-                                 cookies=self.cookies).json()["content"]
+        data = self.__post("data/get/"+table)
         try:
             if not data["AUTHORIZATION"]:
                 return None
         except:
             return data
 
-    def get(self, table, id):
-        data = self.session.post(self.url+"core/data/get/"+table+"/"+id,
-                                 cookies=self.cookies).json()["content"]
+    def get(self, table, id, attr=None):
+        ressource = "data/get/"+table+"/"+id
+        if attr is not None:
+            ressource += "/"+attr
+        data = self.__post(ressource)
         try:
             if not data["AUTHORIZATION"]:
                 return None
@@ -92,44 +105,25 @@ class API:
             return data
 
     def set(self, table, id, store):
-        self.session.post(self.url+"core/data/set/"+table+"/"+id, json=json.dumps(store),
-                          cookies=self.cookies)
+        self.__post("data/set/"+table+"/"+id,store)
 
-    def get_attr(self, table, id, attr):
-        data = self.session.post(self.url+"core/data/get/"+table+"/"+id+"/"+attr,
-                                 cookies=self.cookies).json()["content"]
-        try:
-            if not data["AUTHORIZATION"]:
-                return None
-        except:
-            return data
 
     def find_attr(self, value, attr=None):
         if attr != None:
-            url = self.url+"core/data/find/attr/"+attr+"/"+value
+            url ="data/find/attr/"+attr+"/"+value
         else:
-            url = self.url+"core/data/find/attr/"+value
+            url = "data/find/attr/"+value
 
-        data = self.session.post(url,
-                                 cookies=self.cookies).json()["content"]
+        data = self.__post(url)
         try:
             if not data["AUTHORIZATION"]:
                 return None
         except:
             return data
 
-    def find_schema(self, value):
-        data = self.session.post(self.url+"core/data/find/schema/"+value,
-                                 cookies=self.cookies).json()["content"]
-        try:
-            if not data["AUTHORIZATION"]:
-                return None
-        except:
-            return data
 
     def find_path(self, value):
-        data = self.session.post(self.url+"core/data/find/path/"+value,
-                                 cookies=self.cookies).json()["content"]
+        data = self.__post("data/find/path/"+value)
         try:
             if not data["AUTHORIZATION"]:
                 return None
@@ -137,8 +131,7 @@ class API:
             return data
 
     def find_children(self, value):
-        data = self.session.post(self.url+"core/data/find/children/"+value,
-                                 cookies=self.cookies).json()["content"]
+        data = self.__post("data/find/children/"+value)
         try:
             if not data["AUTHORIZATION"]:
                 return None
@@ -146,8 +139,7 @@ class API:
             return data
 
     def find_parent(self, value):
-        data = self.session.post(self.url+"core/data/find/parent/"+value,
-                                 cookies=self.cookies).json()["content"]
+        data = self.__post("data/find/parent/"+value)
         try:
             if not data["AUTHORIZATION"]:
                 return None
@@ -158,14 +150,14 @@ class API:
 
         if parent_id != None:
             if newid != None:
-                url = self.url+"core/data/create/"+parent_id+"/"+newid
+                url = "data/create/"+parent_id+"/"+newid
             else:
-                url = self.url+"core/data/create/"+parent_id
+                url = "data/create/"+parent_id
         else:
-            url = self.url+"core/data/create/"
+            url = "data/create/"
 
-        data = self.session.post(url,
-                                 cookies=self.cookies).json()["content"]
+        data = self.__post(url)
+    
         try:
             if not data["AUTHORIZATION"]:
                 return None
@@ -175,28 +167,23 @@ class API:
     def delete(self, parent_id=None, newid=None):
 
         if parent_id != None and newid != None:
-            url = self.url+"core/data/delete/"+parent_id+"/"+newid
+            url = "data/delete/"+parent_id+"/"+newid
         elif newid != None:
-            url = self.url+"core/data/delete/"+newid
+            url = "data/delete/"+newid
         else:
             return
 
-        self.session.post(url,
-                          cookies=self.cookies)
+        self.__post(url)
 
     def move(self, id, newparent):
-        self.session.post(self.url+"core/data/move/"+id+"/"+newparent,
-                          cookies=self.cookies)
+        self.__post("data/move/"+id+"/"+newparent)
 
     def set_attr(self, table, id, attr, store):
 
-        self.session.post(self.url+"core/data/set/"+table+"/"+id+"/"+attr, json=json.dumps(store),
-                          cookies=self.cookies)
+        self.__post("data/set/"+table+"/"+id+"/"+attr, store)
 
     def set_table(self, table, store):
-        self.session.post(self.url+"core/data/set/"+table, json=json.dumps(store),
-                          cookies=self.cookies)
+        self.__post("data/set/"+table, store)
 
     def cleanup(self):
-        self.session.post(self.url+"core/data/cleanup/",
-                          cookies=self.cookies)
+        self.__post("data/cleanup/")

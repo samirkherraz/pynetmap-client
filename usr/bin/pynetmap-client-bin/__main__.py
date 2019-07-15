@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 __author__ = 'Samir KHERRAZ'
-__copyright__ = '(c) Samir HERRAZ 2018-2018'
-__version__ = '1.1.0'
+__copyright__ = '(c) Samir HERRAZ 2018-2019'
+__version__ = '1.2.0'
 __licence__ = 'GPLv3'
 
 import os
@@ -57,9 +57,11 @@ class TrayIcon(Gtk.StatusIcon):
         self.main.present()    
 
     def icon_clicked(self, status, button, time):
-        self.menu.popup(None, None, None, button, time)
+        
+        self.menu.popup(None, None, None, button, 0,0)
 
     def reload(self, widget,event=None):
+        self.main.store.refresh()
         self.main.refresh()
 
     def quit(self, widget, event=None):
@@ -70,7 +72,8 @@ class TrayIcon(Gtk.StatusIcon):
 class Boot(Gtk.Window):
 
 
-    
+    LOADING = GdkPixbuf.Pixbuf.new_from_file_at_size("/usr/share/pynetmap/icon.png",512,512)
+
     def on_delete_event(self, widget, event):
         self.hide()
         return True    
@@ -120,26 +123,26 @@ class Boot(Gtk.Window):
         while not self._stop.isSet():
             try:
                 if not self.api.auth_check():
-                    # Notify(self.ui.lang.get("Gtk.notify.connection.lost.title"),
-                    #        self.ui.lang.get("Gtk.notify.connection.lost.text"))
+                    Notify(self.ui.lang.get("Gtk.notify.connection.lost.title"),
+                            self.ui.lang.get("Gtk.notify.connection.lost.text"))
                     self.api.auth()
                     raise Exception("AUTH")
 
-                self.store.refresh()
-                #self.check_alerts()
-
+                self.refresh()
             except:
                 pass
             self._stop.wait(int(self.config.get("refresh")))
 
+
+
     def open_terminal(self, _=None):
 
-        if self.api.get_access("users.privilege.terminal"):
+        if self.api.get_access("terminal"):
             if len(self.selection) > 0:
                 self.terminalbox.external(self.selection[0])
 
     def open_internal_terminal(self, e=None):
-        if self.api.get_access("users.privilege.terminal"):
+        if self.api.get_access("terminal"):
             self.terminal.forall(self.terminal.remove)
             term = self.terminalbox.internal(self.selection[0], e != None)
             if term != None:
@@ -228,7 +231,7 @@ class Boot(Gtk.Window):
         #toolbar.set_style(Gtk.Toolbar.ICONS)
         vBox = Gtk.VBox(False, 2)
         toolbar_n = 0
-        if self.api.get_access("users.privilege.edit"):
+        if self.api.get_access("edit"):
             newtb = Gtk.ToolButton(Gtk.STOCK_NEW)
             newtb.connect("clicked", self.new_entry)
             toolbar.insert(newtb, toolbar_n)
@@ -244,12 +247,12 @@ class Boot(Gtk.Window):
             toolbar.insert(newtb, toolbar_n)
             toolbar_n += 1
 
-        if self.api.get_access("users.privilege.terminal"):
+        if self.api.get_access("terminal"):
             newtb = Gtk.ToolButton(Gtk.STOCK_MEDIA_PLAY)
             newtb.connect("clicked", self.open_terminal)
             toolbar.insert(newtb, toolbar_n)
             toolbar_n += 1
-
+        
         newtb = Gtk.ToolButton(Gtk.STOCK_FIND)
         newtb.connect("clicked", self.search)
         toolbar.insert(newtb, toolbar_n)
@@ -283,7 +286,7 @@ class Boot(Gtk.Window):
         self.notebook.append_page(self.canvas, Gtk.Label(self.lang.get(
             "Gtk.notebook.graph.title")))
         self.TAB_GRAPH = 0
-        if self.api.get_access("users.privilege.terminal"):
+        if self.api.get_access("terminal"):
             self.terminal = Gtk.VBox(True, 2)
             self.notebook.append_page(self.terminal, Gtk.Label(self.lang.get(
                 "Gtk.notebook.terminal.title")))
@@ -296,7 +299,7 @@ class Boot(Gtk.Window):
         swin.add_with_viewport(self.dash)
         self.dashTitle = Gtk.Label(self.lang.get(
             "Gtk.notebook.dash.title").replace("$value", "0"))
-        self.notebook.append_page(swin, self.dashTitle)
+        #self.notebook.append_page(swin, self.dashTitle)
         self.TAB_ALERTS = 2
         hBox.add(vBoxLeft)
         hBox.add(self.notebook)
@@ -319,15 +322,18 @@ class Boot(Gtk.Window):
             if self.search_function(key, [0]):
                 self.selection_changed(None)
 
-    def search_function(self, key, path):
 
+   
+
+
+    def search_function(self, key, path):
+        self.tree.expand_all()
         while True:
             npath = ':'.join(str(x) for x in path)
             try:
                 cur = self.tree.get_model().get_iter_from_string(npath)
 
                 if key == self.treeStore.get_value(cur, 0):
-                    self.tree.expand_all()
                     self.tree.get_selection().select_iter(cur)
                     return True
                 else:
@@ -343,37 +349,35 @@ class Boot(Gtk.Window):
 
     def new_entry(self, widget):
         Add(self)
-
+        self.refresh()
     def edit_entry(self, widget):
         Edit(self)
 
-    def reload(self, _):
-        self.api.tunnel_relaod()
 
     def updateui(self):
+        #self.store.refresh()
+        self.call_select = False
         self.treeStore.clear()
         self.populate()
         self.tree.expand_all()
+        self.call_select = True
         if len(self.selection) > 0:
             if self.search_function(self.selection[0], [0]):
-                self.selection_changed(None)
+                    self.selection_changed(None)
 
     def refresh(self):
         GLib.idle_add(self.updateui,
-                         priority=GLib.PRIORITY_HIGH)
+                         priority=GLib.PRIORITY_LOW)
 
     def delete_entry(self, widget):
         r = AskConfirmation(self,  self.lang.get("Gtk.delete.dialog.text") +
-                            self.store.get_attr("base", self.selection[0], KEY_NAME))
+                            self.store.get(DB_BASE, self.selection[0], KEY_NAME))
         if r.is_ok():
             if len(self.selection) > 1:
                 self.store.delete(self.selection[1], self.selection[0])
             else:
                 self.store.delete(None, self.selection[0])
-
-            self.treeStore.clear()
-            self.populate()
-            self.tree.expand_all()
+            self.refresh()
 
     def drag(self, widget, elm):
         curtime = time.time()
@@ -446,6 +450,7 @@ class Boot(Gtk.Window):
         Gdk.cairo_set_source_pixbuf(cr,pixbuf, translate["translate_x"], translate["translate_y"])
         
         cr.paint()
+    
         
     def populate(self, lst=None, parent=None):
         if lst == None:
@@ -453,28 +458,28 @@ class Boot(Gtk.Window):
         for key in lst.keys():
             alert = self.check_status(key)
             row = self.treeStore.append(
-                parent, [key, self.store.get_attr("base", key, KEY_NAME), alert])
+                parent, [key, self.store.get(DB_BASE, key, KEY_NAME), alert])
             self.populate(lst[key], row)
 
     def check_status(self, elm):
-        alerts = self.store.get("alert", elm)
+        #alerts = self.store.get("alert", elm)
         r = self.status_icons["alert.none"]
-        for e in alerts:
-            try:
-                if alerts[e]["severity"] == 1:
-                    r = self.status_icons[e]
-            except:
-                pass
-        for e in alerts:
-            try:
-                if alerts[e]["severity"] == 0:
-                    r = self.status_icons[e]
-            except:
-                pass
+        # for e in alerts:
+        #     try:
+        #         if alerts[e]["severity"] == 1:
+        #             r = self.status_icons[e]
+        #     except:
+        #         pass
+        # for e in alerts:
+        #     try:
+        #         if alerts[e]["severity"] == 0:
+        #             r = self.status_icons[e]
+        #     except:
+        #         pass
         return r
 
     def check_alerts(self):
-        alerts = self.store.get_table("alert")
+        alerts = self.store.get_table(DB_ALERT)
         self.dashStore.clear()
         fatal = 0
         msg = ""
@@ -483,15 +488,15 @@ class Boot(Gtk.Window):
             for lkey in alerts[key]:
                 if alerts[key][lkey]["severity"] == 0:
                     self.dashStore.append(
-                        ["#2396a6", self.status_icons[lkey], self.store.get_attr("base", key, KEY_NAME), str(alerts[key][lkey]["content"])])
+                        ["#2396a6", self.status_icons[lkey], self.store.get(DB_BASE, key, KEY_NAME), str(alerts[key][lkey]["content"])])
                 else:
                     self.dashStore.prepend(
-                        ["#d03d3c", self.status_icons[lkey], self.store.get_attr("base", key, KEY_NAME), str(alerts[key][lkey]["content"])])
+                        ["#d03d3c", self.status_icons[lkey], self.store.get(DB_BASE, key, KEY_NAME), str(alerts[key][lkey]["content"])])
                     fatal += 1
                     if key not in self.alerts:
                         self.alerts[key] = dict()
                     if lkey not in self.alerts[key]:
-                        msg += self.store.get_attr("base", key, KEY_NAME)
+                        msg += self.store.get(DB_BASE, key, KEY_NAME)
                         msg += " : " + str(alerts[key][lkey]["content"])
                         msg += "\n"
                         notif = True
@@ -541,6 +546,7 @@ class Boot(Gtk.Window):
     def __init__(self):
         super(Boot, self).__init__()
         self._stop = Event()
+        self.call_select = True
         self.alerts = dict()
         self.lang = LangStore(self)
         self.lang.read()
@@ -617,28 +623,31 @@ class Boot(Gtk.Window):
                     self.api.auth_user(u.getResponse(), p.getResponse())
 
     def selection_changed(self, widget):
-        (model, pathlist) = self.tree.get_selection().get_selected_rows()
-        value = []
-        for path in pathlist:
-            cur = model.get_iter(path)
-            self.selection_cur = cur
-            while cur != None:
-                value.append(model.get_value(cur, 0))
-                cur = model.iter_parent(cur)
+        if self.call_select:
+            (model, pathlist) = self.tree.get_selection().get_selected_rows()
+            value = []
+            for path in pathlist:
+                cur = model.get_iter(path)
+                self.selection_cur = cur
+                while cur != None:
+                    value.append(model.get_value(cur, 0))
+                    cur = model.iter_parent(cur)
+                    
 
-        if value != None:
-            if self.selection != value:
-                changed = True
-                self.scale = 1
-                self.lx = 0
-                self.x = 0
-                self.ly = 0
-                self.y = 0
-                self.selection = value
-                print(self.selection)
-            else:
-                changed = False
-            self.draw(value, changed)
+            if value != None:
+                if self.selection != value:
+                    changed = True
+                    self.scale = 1
+                    self.lx = 0
+                    self.x = 0
+                    self.ly = 0
+                    self.y = 0
+                    self.selection = value
+                else:
+                    changed = False
+                
+                Thread(target=self.draw,args=(value, changed,)).start()
+                
 
 
 if __name__ == '__main__':

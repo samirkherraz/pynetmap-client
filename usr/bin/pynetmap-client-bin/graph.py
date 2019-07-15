@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 __author__ = 'Samir KHERRAZ'
-__copyright__ = '(c) Samir HERRAZ 2018-2018'
-__version__ = '1.1.0'
+__copyright__ = '(c) Samir HERRAZ 2018-2019'
+__version__ = '1.2.0'
 __licence__ = 'GPLv3'
 
 import os
@@ -44,13 +44,13 @@ class Graph:
 
     def node(self, key, detailed, lvl=0):
 
-        vmstate = self.store.get_attr(
+        vmstate = self.store.get(
             "module", key, KEY_STATUS)
 
-        vmicon = self.store.get_attr(
-            "schema", self.store.get_attr("base", key, KEY_TYPE), "Icon")
+        vmicon = self.store.get(
+            "schema", self.store.get("base", key, KEY_TYPE), "Icon")
 
-        vmname = self.store.get_attr("base", key, KEY_NAME)
+        vmname = self.store.get("base", key, KEY_NAME)
 
         icon = vmicon+".png"
         try:
@@ -73,7 +73,7 @@ class Graph:
         s += "<TR><TD colspan='2' ><b>" + vmname+"</b></TD></TR>"
         if detailed:
             vmfields = self.store.get(
-                "schema", self.store.get_attr("base", key, KEY_TYPE))["Fields"]
+                "schema", self.store.get("base", key, KEY_TYPE))["Fields"]
             
             info = self.store.get("module", key)
             table = dict()
@@ -115,9 +115,9 @@ class Graph:
             tblbase = "<TABLE border='0' cellborder='0' cellspacing='5'>"
             for k in table["base"]:
                 if ".password" in k:
-                    rst = "*" * len(str(self.store.get_attr("base", key, k)))
+                    rst = "*" * len(str(self.store.get("base", key, k)))
                 else:
-                    rst = str(self.store.get_attr("base", key, k))
+                    rst = str(self.store.get("base", key, k))
                     rst = rst.replace('"', '\"')
                 tblbase += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><B>"+self.ui.lang.get(k) + \
                     "</B></TD><TD VALIGN='TOP' ALIGN='LEFT'>"+rst + "</TD></TR>"
@@ -133,7 +133,7 @@ class Graph:
                     "</B></TD><TD VALIGN='TOP' ALIGN='LEFT'>"+rst + "</TD></TR>"
                 tblbaseb = True
             for k in table["basemultiline"]:
-                rst = str(self.store.get_attr("base", key, k))
+                rst = str(self.store.get("base", key, k))
                 rst = rst.replace('\n', "<BR ALIGN='LEFT'/>")
                 tblbase += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><B>"+self.ui.lang.get(k) + \
                     "</B></TD><TD VALIGN='TOP' ALIGN='LEFT'>"+rst + "</TD></TR>"
