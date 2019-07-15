@@ -2,7 +2,7 @@
 PyNetMap est un logiciel qui vise à simplifier la vie aux administrateurs systèmes.
 Lorsque vous gérez une infrastructure de plusieurs serveurs, éventuellement des machines virtuelles et des conteneurs. il devient difficile de retrouver le chemin pour vous connecter en SSH sur vos machines
 
-## Pourquoi
+## Pourquoi ?
 
 Quand je suis arrivé chez DotRiver dans le cadre de mon stage de fin de licence en 2018, J'ai dû identifier toute l'infrastructure de DotRiver manuellement, consulter la documentation qui parfois n'était pas à jour pendant des heures pour pouvoir m'y retrouver.
 
@@ -29,14 +29,14 @@ Grâce à ce système, il suffit de paramétrer le pont SSH sur PyNetMap et vous
 ### Outil de monitoring
 Une fois le gestionnaire de connexion ssh implémenté, c'est dommage de rien en faire.
 un Daemon est donc lancé afin d'exécuter des commandes régulièrement sur les machines afin de récupérer quelques informations :
-	- L'utilisation RAM
-	- L'utilisation CPU 
-	- Le nombre de coeurs
-	- L'utilisation des disques 
-	- Les points de montage et leurs utilisations 
-	- Les services qui écoutent sur le réseau 
-	- L'adresse Mac 
-	- L'adresse IP
+- L'utilisation RAM
+- L'utilisation CPU 
+- Le nombre de coeurs
+- L'utilisation des disques 
+- Les points de montage et leurs utilisations 
+- Les services qui écoutent sur le réseau 
+- L'adresse Mac 
+- L'adresse IP
 
 Une fois ces informations sont récupérées, un algorithme se lance pour vérifier que tout va bien. si jamais une erreur ou une anomalie est détectée, une alerte est alors générée pour prévenir qu'il y a un problème. ( comme sur n'importe quel outil de monitoring : Zabbix )
 
@@ -44,19 +44,19 @@ Une fois ces informations sont récupérées, un algorithme se lance pour vérif
 ### Outil de découverte réseau
 Connaissant la nature d'un serveur lambda, un module permet de découvrir ce qui tourne sur ce serveur, si par exemple vous ajoutez un serveur Proxmox dans PyNetMap, ce dernier va lancer à chaque cycle la découverte des vm, conteneurs qui tourne dessus et les ajoute à la base.
 cette decouverte concerne :
-	- L'adresse ip de la vm
-	- Son adresse mac
-	- Son nom
+- L'adresse ip de la vm
+- Son adresse mac
+- Son nom
 
 les informations complémentaires doivent être rajoutées manuellement.
 
 ## Aujourd'hui :
 Le système de monitoring ne prend en charge que Linux ( installation des dépendances automatiques pour les distributions Debian bases)
 Sinon pour les autres distributions les outils suivants sont requis pour le monitoring :
-	- arp-scan
-	- route
-	- sockstat
-	- vmstat
+- arp-scan
+- route
+- sockstat
+- vmstat
 
 Mais aussi monitoring des VM et conteneurs via l'api de Proxmox 
 
@@ -64,9 +64,9 @@ La découverte est prise en charge que pour proxmox via l'api.
 
 ## Implémentation future :
 Je continue le développement régulièrement sur PyNetMap et je vise à implémenter d'autre fonctionnalité plus avancée nettement :
-	- Un module OpenStack et un autre pour Docker ( Découverte et Monitoring comme sur proxmox )
-	- Création et contrôle de VM directement depuis PyNetMAP ( OpenStack, Docker et Proxmox ) et éventuellement déployment de configuration/script automatisé ( Ansible ? ) 
-	- Intégration de découvert d'equiements réseau ( routeur, switch...etc.)
-	- Implémentation d'un module de monitoring via SNMP
+- Un module OpenStack et un autre pour Docker ( Découverte et Monitoring comme sur proxmox )
+- Création et contrôle de VM directement depuis PyNetMAP ( OpenStack, Docker et Proxmox ) et éventuellement déployment de configuration/script automatisé ( Ansible ? ) 
+- Intégration de découvert d'equiements réseau ( routeur, switch...etc.)
+- Implémentation d'un module de monitoring via SNMP
 	
 Je reste ouvert à toute suggestion de fonctionnalités, et pour ceux d'entre vous qui souhaite contribuer au projet, tout le monde est le bienvenue.
