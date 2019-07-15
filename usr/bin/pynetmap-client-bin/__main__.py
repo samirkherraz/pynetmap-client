@@ -602,21 +602,28 @@ class Boot(Gtk.Window):
         self._stop.set()
 
     def run(self):
-        auth = True
-        while auth:
-            auth = False
-            if not API.getInstance().is_server_online():
-                self.edit_config()
-            try:
-                self.auth_gui()
-            except ValueError :
-                Error(self,  Lang.getInstance().get("gtk.serverdown.dialog.text"))
-                exit(0)
-            if not API.getInstance().auth_check():
-                auth = AskConfirmation(
+        server_reached = False
+
+        if API.getInstance().is_server_online():
+            server_reached = True
+        else:
+            Error(self,  Lang.getInstance().get("gtk.serverdown.dialog.text"))
+            self.edit_config()
+
+        if not API.getInstance().is_server_online():
+            Error(self,  Lang.getInstance().get("gtk.serverdown.dialog.text"))
+            exit(1)
+        
+        for _ in range(3):
+            self.auth_gui()
+            if API.getInstance().auth_check():
+                break
+            else:
+                retry = AskConfirmation(
                     self,  Lang.getInstance().get("gtk.loginfailed.dialog.text")).is_ok()
-                if not auth:
+                if not retry:
                     exit(0)
+
 
     def auth_gui(self):
         if not API.getInstance().auth_check():
