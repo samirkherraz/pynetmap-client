@@ -311,7 +311,7 @@ class Boot(Gtk.Window):
         vBox.add(hBox)
         self.add(vBox)
 
-    def edit_config(self, _):
+    def edit_config(self, _=None):
         cfg = GtkConfig()
         for (k, _) in Config.getInstance().items():
             cfg.set_field(k, Config.getInstance().get(k))
@@ -606,8 +606,7 @@ class Boot(Gtk.Window):
         while auth:
             auth = False
             if not API.getInstance().is_server_online():
-                Config.getInstance().check()
-                API.getInstance().reset()
+                self.edit_config()
             try:
                 self.auth_gui()
             except ValueError :
