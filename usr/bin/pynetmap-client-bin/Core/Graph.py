@@ -15,7 +15,7 @@ from Core.Lang import Lang
 class Graph:
     def __init__(self):
         self.format = "jpeg"
-        self.tmppath = "/tmp/pynetmap-"+getpass.getuser()+"/"
+        self.tmppath = "/tmp/.pynetmap-"+getpass.getuser()+"/"
         self.tmpfile = self.tmppath+"graph.dot"
         self.tmpfilefmt = self.tmppath+"graph."+self.format
 

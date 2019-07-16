@@ -391,6 +391,7 @@ class Boot(Gtk.Window):
     def drag(self, widget, elm):
         curtime = time.time()
         if self.mousedown and curtime > (self.lasttime + 0.025):
+            self.dragged = True
             self.lasttime = curtime
             x, y = widget.get_pointer()
             self.x = x/self.scale
@@ -400,8 +401,11 @@ class Boot(Gtk.Window):
 
     def mouse_on(self, widget, elm):
         if elm.button == 1:
+            self.dragged = False
             self.lasttime = 0
             x, y = widget.get_pointer()
+            self.llx = self.lx
+            self.lly = self.ly
             self.lx = x/self.scale - (self.x - self.lx)
             self.ly = y/self.scale - (self.y - self.ly)
             self.mousedown = True
@@ -409,6 +413,10 @@ class Boot(Gtk.Window):
     def mouse_off(self, widget, elm):
         if elm.button == 1:
             self.mousedown = False
+            if not self.dragged:
+                self.lx = self.llx
+                self.ly = self.lly
+
 
     def scroll(self, widget, elm):
         if self.current_doc == None:
