@@ -8,6 +8,9 @@ import os
 import signal
 import time
 from threading import Event, Lock, Thread
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('Vte', '2.91')
 from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
 
 from Core.Api import API
