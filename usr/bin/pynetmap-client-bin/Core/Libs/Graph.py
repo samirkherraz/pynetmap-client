@@ -10,8 +10,8 @@ import getpass
 from datetime import datetime, timedelta
 from Constants import *
 from gi.repository import Gtk, Gdk, GLib,GdkPixbuf
-from Core.Api import API
-from Core.Lang import Lang
+from Core.Libs.Api import Api
+from Core.Libs.Lang import Lang
 class Graph:
     def __init__(self):
         self.format = "jpeg"
@@ -19,7 +19,6 @@ class Graph:
         self.tmpfile = self.tmppath+"graph.dot"
         self.tmpfilefmt = self.tmppath+"graph."+self.format
 
-        print(self.tmppath)
         try:
             os.mkdir(self.tmppath)
         except:
@@ -47,10 +46,10 @@ class Graph:
         return r
 
     def node(self, key, detailed, lvl=0):
-        base = API.getInstance().get(DB_BASE, key)
+        base = Api.getInstance().get(DB_BASE, key)
         if base is None:
             base = {}
-        info = API.getInstance().get(DB_MODULE, key)
+        info = Api.getInstance().get(DB_MODULE, key)
         if info is None:
             info = {}
         vmstate = info.get(KEY_STATUS)
@@ -112,7 +111,7 @@ class Graph:
                     
                     name = (vmname+k+".png").replace(" ", "").lower()
                     self.subgraph(info.get(KEY_MONITOR_HISTORY).get(k), name, Lang.getInstance().get(k), (k == KEY_STATUS) )
-                    tblhistory += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><IMG SRC='/tmp/pynetmap/" + \
+                    tblhistory += "<TR><TD VALIGN='TOP' ALIGN='LEFT'><IMG SRC='"+self.tmppath+"/" + \
                         name+"' /></TD></TR>"
                     tblhistoryb = True
             tblhistory += "</TABLE>"
@@ -182,7 +181,7 @@ class Graph:
         return s
 
     def subgraph(self, list, name, title, bln=False):
-        file = open("/tmp/pynetmap/"+name+".list", "w")
+        file = open(self.tmppath+"/" +name+".list", "w")
         for e in list:
             if str(e["value"]) != "":
                 ee = float(e["value"])
@@ -224,18 +223,18 @@ class Graph:
         set cbrange [0:2];
         set nocbtics;
         unset colorbox;
-        plot '/tmp/pynetmap/""" + name+""".list' using 1:2:3 notitle with filledcurves above x1 fc palette;" > /tmp/pynetmap/""" + name+""" """
+        plot '"""+self.tmppath+"/" + name+""".list' using 1:2:3 notitle with filledcurves above x1 fc palette;" > """+self.tmppath+"/"  + name+""" """
         os.system(cmd)
 
     def generate_node_recur(self, key,  detailed, lvl):
         st = self.node(key, detailed, lvl)
-        for k in API.getInstance().find_children(key):
+        for k in Api.getInstance().find_children(key):
             st += self.generate_node_recur(k, detailed, lvl+1)
             st += self.edge(key, k, lvl+1)
         return st
 
     def generate(self, selection):
-        self.tmpschema = API.getInstance().get(DB_SCHEMA)
+        self.tmpschema = Api.getInstance().get(DB_SCHEMA)
         st = self.header
         st += self.node(selection[0], True)
         i = 1
@@ -244,7 +243,7 @@ class Graph:
             st += self.edge(selection[i], selection[i-1], 0)
             i += 1
 
-        for o in API.getInstance().find_children(selection[0]):
+        for o in Api.getInstance().find_children(selection[0]):
             st += self.generate_node_recur(o, False, 1)
             st += self.edge(selection[0], o, 1)
         st += self.footer
@@ -252,7 +251,7 @@ class Graph:
 
     def generate_all_map(self):
         st = self.header
-        elm = API.getInstance().get("structure")
+        elm = Api.getInstance().get("structure")
         for k in elm:
             st += self.generate_node_recur(k, False, 0)
 

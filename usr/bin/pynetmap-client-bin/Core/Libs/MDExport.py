@@ -6,20 +6,20 @@ __licence__ = 'GPLv3'
 
 import os
 from Constants import *
-from Core.Api import API
-from Core.Lang import Lang
+from Core.Libs.Api import Api
+from Core.Libs.Lang import Lang
 
 class MDExport:
-    def __init__(self, parent):
+    def __init__(self):
        
         self.filesystem = open("/tmp/export-"+str(os.getuid())+".md", "w")
-        st = self.write(API.getInstance().get("structure"), 0)
+        st = self.write(Api.getInstance().get("structure"), 0)
         self.filesystem.write(st)
         self.filesystem.close()
         os.system("xdg-open /tmp/export-"+str(os.getuid())+".md &")
 
     def write_node(self, key, spc):
-        el = API.getInstance().get(DB_BASE , key)
+        el = Api.getInstance().get(DB_BASE , key)
         s = "\n"
         s += spc+" "+el[KEY_TYPE]+" - "+el[KEY_NAME]+"\n"
         hidden = [KEY_SSH_PASSWORD, KEY_TYPE, KEY_NAME, KEY_SSH_USER, KEY_SSH_PORT,

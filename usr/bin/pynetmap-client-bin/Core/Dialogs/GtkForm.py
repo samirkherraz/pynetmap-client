@@ -5,8 +5,8 @@ __version__ = '1.3.0'
 __licence__ = 'GPLv3'
 from gi.repository import Gtk, Gdk, GLib
 from Constants import *
-from Core.Api import API
-from Core.Lang import Lang
+from Core.Libs.Api import Api
+from Core.Libs.Lang import Lang
 
 
 class GtkForm(Gtk.Dialog):
@@ -19,7 +19,7 @@ class GtkForm(Gtk.Dialog):
 
     def build(self, template=None):
         self._fields[KEY_TYPE] = Gtk.ComboBoxText()
-        for key in API.getInstance().get(DB_SCHEMA):
+        for key in Api.getInstance().get(DB_SCHEMA):
             self._fields[KEY_TYPE].append_text(key)
         self._fields[KEY_TYPE].connect('changed', self.on_changed)
 
@@ -76,6 +76,8 @@ class GtkForm(Gtk.Dialog):
                     start_iter, end_iter, True)
             elif type(self._fields[id]) is Gtk.ComboBoxText:
                 ret = self._fields[id].get_active_text()
+            elif type(self._fields[id]) is Gtk.CheckButton:
+                ret = self._fields[id].get_active()
 
             return ret
         except:
@@ -100,14 +102,15 @@ class GtkForm(Gtk.Dialog):
             self.grid = Gtk.Table(len(template["Fields"])+1, 2, False)
             self.grid.set_row_spacings(12)
             i = 0
-            elms = API.getInstance().find(DB_SCHEMA,
-                template["Parents"], "schema") if template["Parents"] != None else []
+            elms = Api.getInstance().find(DB_BASE,
+                template["Parents"], "type") if template["Parents"] != None else []
             if len(elms) > 0:
                 self._has_parent = True
                 self._fields["parent"] = Gtk.ComboBoxText()
+                base = Api.getInstance().get(DB_BASE)
                 for el in elms:
                     self._fields["parent"].append(
-                        el, API.getInstance().get(DB_BASE , el, KEY_NAME))
+                        el, base[el][KEY_NAME])
                 self._fields["parent"].set_active(0)
 
                 if template["Build"] == "MANUAL":
@@ -151,7 +154,7 @@ class GtkForm(Gtk.Dialog):
 
     def on_changed(self, widget):
         active = self._fields[KEY_TYPE].get_active_text()
-        self.form(API.getInstance().get(DB_SCHEMA, active))
+        self.form(Api.getInstance().get(DB_SCHEMA, active))
 
     def __init__(self, name, parent):
         Gtk.Dialog.__init__(self, name, parent, flags=Gtk.DialogFlags.MODAL,

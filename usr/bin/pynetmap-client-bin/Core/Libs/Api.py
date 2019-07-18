@@ -9,8 +9,8 @@ import hashlib
 import json
 from threading import Thread
 import requests
-from Core.Config import Config
-class API:
+from Core.Libs.Config import Config
+class Api:
 
     __INSTANCE__ =None
 
@@ -23,7 +23,6 @@ class API:
 
     def __post(self, ressource, data={}, timeout=None):
             ret = self.session.post(self.url+ressource, cookies=self.cookies,  json=json.dumps(data), timeout=timeout).json()
-            print(ressource)
             status=ret["status"]
             content=""
             data=""
@@ -32,11 +31,8 @@ class API:
                     content=ret["content"]
                     return content
                 except:
-                    print(ret)
                     return None
             else:
-                print(data)
-                print(content)
                 return None
     def reset(self):
         self.url= Config.getInstance().get("server")+"/"
@@ -52,8 +48,7 @@ class API:
         try:
             self.__post(self.url+"ping", None, 1)
             return True
-        except Exception as e:
-            print(e)
+        except:
             return False
 
     def get_access(self, prop):
@@ -85,9 +80,6 @@ class API:
                 return None
         except:
             return data
-
-    def set(self, table, id, store):
-        self.__post("data/set/"+table+"/"+id,store)
 
 
     def find(self,table, value, attr=None):
@@ -160,12 +152,13 @@ class API:
     def move(self, id, newparent):
         self.__post("data/move/"+id+"/"+newparent)
 
-    def set_attr(self, table, id, attr, store):
 
-        self.__post("data/set/"+table+"/"+id+"/"+attr, store)
+    def set(self, *args, data):
+        self.__post("data/set/"+"/".join(args),data)
+    
+    def rm(self, *args):
+        self.__post("data/rm/"+"/".join(args))
 
-    def set_table(self, table, store):
-        self.__post("data/set/"+table, store)
 
     def cleanup(self):
         self.__post("data/cleanup/")
@@ -173,6 +166,6 @@ class API:
     
     @staticmethod
     def getInstance():
-        if API.__INSTANCE__ is None:
-            API.__INSTANCE__ = API()
-        return API.__INSTANCE__
+        if Api.__INSTANCE__ is None:
+            Api.__INSTANCE__ = Api()
+        return Api.__INSTANCE__

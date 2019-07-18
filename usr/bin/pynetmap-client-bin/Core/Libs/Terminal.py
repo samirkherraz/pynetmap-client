@@ -12,17 +12,17 @@ from subprocess import Popen
 from urllib.request import urlparse
 from threading import Lock
 from gi.repository import Gtk, Gdk, GLib, Vte
-from Core.Config import Config
-from Core.Api import API
+from Core.Libs.Config import Config
+from Core.Libs.Api import Api
 class Terminal:
     def __init__(self):
         self.terminals = dict()
         self._lock = Lock()
 
     def reload_access(self):
-        if API.getInstance().get_access("terminal"):
-            self.sshuser = API.getInstance().get("server", "ssh", "user")
-            self.sshpassword = API.getInstance().get("server", "ssh", "password")
+        if Api.getInstance().get_access("terminal"):
+            self.sshuser = Api.getInstance().get("server", "ssh", "user")
+            self.sshpassword = Api.getInstance().get("server", "ssh", "password")
         else:
             self.sshuser = None
             self.sshpassword = None
@@ -54,7 +54,7 @@ class Terminal:
         sock = socket.socket()
         try:
             sock.connect((host, port))
-        except Exception as e:
+        except:
             return
 
         while True:

@@ -5,8 +5,8 @@ __version__ = '1.3.0'
 __licence__ = 'GPLv3'
 from gi.repository import Gtk, Gdk, GLib
 from Core.Dialogs.GtkForm import GtkForm
-from Core.Api import API
-from Core.Lang import Lang
+from Core.Libs.Api import Api
+from Core.Libs.Lang import Lang
 from Constants import *
 
 
@@ -16,7 +16,7 @@ class GtkEdit(GtkForm):
             "Gtk.edit.title"), parent)
         if len(selection) > 0:
             self._fields[KEY_TYPE].set_sensitive(False)
-            self.set_fields(API.getInstance().get(
+            self.set_fields(Api.getInstance().get(
                 DB_BASE, selection[0]))
             if len(selection) > 1:
                 self.set_parent(selection[1])
@@ -24,10 +24,10 @@ class GtkEdit(GtkForm):
             result = self.run()
             if result == Gtk.ResponseType.OK:
                 for key in self.get_fields():
-                    API.getInstance().set_attr(
-                        DB_BASE, selection[0], key, self.get_field(key))
+                    Api.getInstance().set(
+                        DB_BASE, selection[0], key, data=self.get_field(key))
                 if len(selection) > 1 and selection[1] != self.get_parent():
-                    API.getInstance().move(
+                    Api.getInstance().move(
                         selection[0], self.get_parent())
 
         self.destroy()

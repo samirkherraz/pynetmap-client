@@ -4,9 +4,10 @@ __copyright__ = '(c) Samir HERRAZ 2018-2019'
 __version__ = '1.3.0'
 __licence__ = 'GPLv3'
 from gi.repository import Gtk, Gdk, GLib
-from Core.Config import Config
-from Core.Lang import Lang
-
+from Core.Libs.Config import Config
+from Core.Libs.Lang import Lang
+from Core.Libs.Api import Api
+from Constants import *
 
 class GtkConfig(Gtk.Dialog):
     def prepare(self):
@@ -47,10 +48,20 @@ class GtkConfig(Gtk.Dialog):
         except:
             return None
 
-    def __init__(self):
-        Gtk.Dialog.__init__(self, Lang.getInstance().get("gtk.config.title"), None, flags=Gtk.DialogFlags.MODAL,
+    def __init__(self, parent):
+        Gtk.Dialog.__init__(self, Lang.getInstance().get("gtk.config.title"), parent, flags=Gtk.DialogFlags.MODAL,
                             buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK,
                                      Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
         self.prepare()
         self.build(Config.getInstance().configuration.items("GLOBAL"))
         self.show_all()
+        for (k, _) in Config.getInstance().items():
+            self.set_field(k, Config.getInstance().get(k))
+        result = self.run()
+        if result == Gtk.ResponseType.OK:
+            for (k, _) in Config.getInstance().items():
+                Config.getInstance().set(k, self.get_field(k))
+            Config.getInstance().write()
+        self.destroy()
+        Api.getInstance().reset()
+

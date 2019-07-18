@@ -66,4 +66,4 @@ KEY_TUNNEL_PASSWORD = "tunnel.password"
 KEY_TUNNEL_PORT = "tunnel.port"
 KEY_TUNNEL_NETWORK = "tunnel.network"
 
-DEBUG = True
+DEBUG = False
