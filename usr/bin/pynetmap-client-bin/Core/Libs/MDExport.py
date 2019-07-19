@@ -1,34 +1,34 @@
 #!/usr/bin/env python
 __author__ = 'Samir KHERRAZ'
-__copyright__ = '(c) Samir HERRAZ 2018-2018'
-__version__ = '1.1.0'
+__copyright__ = '(c) Samir HERRAZ 2018-2019'
+__version__ = '1.2.0'
 __licence__ = 'GPLv3'
 
 import os
+from Constants import *
+from Core.Libs.Api import Api
+from Core.Libs.Lang import Lang
 
-
-class Export:
-    def __init__(self, parent):
-        self.store = parent.store
-        self.lang = parent.lang
-
+class MDExport:
+    def __init__(self):
+       
         self.filesystem = open("/tmp/export-"+str(os.getuid())+".md", "w")
-        st = self.write(self.store.get_table("structure"), 0)
+        st = self.write(Api.getInstance().get("structure"), 0)
         self.filesystem.write(st)
         self.filesystem.close()
         os.system("xdg-open /tmp/export-"+str(os.getuid())+".md &")
 
-    def writeNode(self, key, spc):
-        el = self.store.get("base", key)
+    def write_node(self, key, spc):
+        el = Api.getInstance().get(DB_BASE , key)
         s = "\n"
-        s += spc+" "+el["base.core.schema"]+" - "+el["base.name"]+"\n"
-        hidden = ["base.ssh.password", "base.core.schema", "base.name", "base.ssh.user", "base.ssh.port",
-                  "base.tunnel.user", "base.tunnel.password", "base.tunnel.port"]
+        s += spc+" "+el[KEY_TYPE]+" - "+el[KEY_NAME]+"\n"
+        hidden = [KEY_SSH_PASSWORD, KEY_TYPE, KEY_NAME, KEY_SSH_USER, KEY_SSH_PORT,
+                  KEY_TUNNEL_IP, KEY_TUNNEL_PASSWORD, KEY_TUNNEL_PORT, KEY_TUNNEL_USER]
         for key in el:
             if key in hidden:
                 pass
             else:
-                s += "  - "+self.lang.get(key) + " : "
+                s += "  - "+Lang.getInstance().get(key) + " : "
                 if "\n" in str(el[key]):
                     s += "\n"+'```\n'
                     s += str(el[key])
@@ -48,6 +48,6 @@ class Export:
             spc = "#"
         st = ""
         for k in node:
-            st += self.writeNode(k, spc)
+            st += self.write_node(k, spc)
             st += self.write(node[k], lvl+2)
         return st
