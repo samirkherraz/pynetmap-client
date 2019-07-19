@@ -15,7 +15,7 @@ class Lang():
 
     def __init__(self, lang):
         self.configuration = configparser.ConfigParser()
-        self.file = "./etc/pynetmap-client/langs.conf"
+        self.file = "/etc/pynetmap-client/langs.conf"
         self.lang = lang
 
     def read(self):

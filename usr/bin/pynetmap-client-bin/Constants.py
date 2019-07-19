@@ -8,7 +8,7 @@ import os
 
 TERMINAL = """"""
 #CONFIG_PATH = os.getenv("HOME")+"/.pynetmap-client"
-CONFIG_PATH = "./etc/pynetmap-client/global.conf"
+CONFIG_PATH = "/etc/pynetmap-client/global.conf"
 NAME = "PyNetMAP"
 VERSION = " 1.0.4-beta"
 
