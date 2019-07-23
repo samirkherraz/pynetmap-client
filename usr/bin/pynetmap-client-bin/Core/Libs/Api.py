@@ -138,15 +138,8 @@ class Api:
         except:
             return data["ID"]
 
-    def delete(self, parent_id=None, newid=None):
-
-        if parent_id != None and newid != None:
-            url = "data/delete/"+parent_id+"/"+newid
-        elif newid != None:
-            url = "data/delete/"+newid
-        else:
-            return
-
+    def delete(self, newid):    
+        url = "data/delete/"+newid
         self.__post(url)
 
     def move(self, id, newparent):
