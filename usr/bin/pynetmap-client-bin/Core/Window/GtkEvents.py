@@ -151,17 +151,15 @@ class GtkEvents(Thread):
 
     def on_edit_entry(self, widget):
         GtkEdit(self.win, self.obj.selection)
-
+        self.on_refresh()
+        
     def on_delete_entry(self, widget):
         r = GtkConfirmation(self.win,  Lang.getInstance().get("Gtk.delete.text") +
                             Api.getInstance().get(DB_BASE, self.obj.selection[0], KEY_NAME))
         if r.is_ok():
-            if len(self.obj.selection) > 1:
-                Api.getInstance().delete(
-                    self.obj.selection[1], self.obj.selection[0])
-            else:
-                Api.getInstance().delete(None, self.obj.selection[0])
-            self.on_refresh()
+            if len(self.obj.selection) > 0:
+                Api.getInstance().delete(self.obj.selection[0])
+                self.on_refresh()
 
     def on_page_change(self, e, n, v):
         if len(self.obj.selection) > 0:
