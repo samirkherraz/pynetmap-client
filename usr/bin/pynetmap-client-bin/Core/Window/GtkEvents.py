@@ -30,6 +30,8 @@ from Core.Dialogs.GtkUsers import GtkUsers
 class UIObjects():
 
     def __init__(self):
+        object.__setattr__(self, "_lock", Lock())
+        object.__setattr__(self, "_dict", dict())
         self.call_select = True
         self.terminalbox = Terminal()
         self.graph = Graph()
@@ -46,6 +48,21 @@ class UIObjects():
         self.TAB_GRAPH = 0
         self.TAB_TERMINAL = 1
         self.TAB_ALERTS = 2
+    
+    def __getattr__(self, attr):
+        if not str(attr).startswith("_"):
+            return self._dict[attr] if attr in self._dict.keys() else None
+        else:
+            with self._lock:
+                return object.__getattribute__(self, attr)
+
+    def __setattr__(self, attr, store):
+        if not str(attr).startswith("_"):
+            self._dict[attr] = store
+        else:
+            with self._lock:
+                object.__setattr__(self, attr, store)
+
 
 
 class GtkEvents(Thread):
@@ -66,7 +83,11 @@ class GtkEvents(Thread):
     def on_open_terminal(self, _=None):
         if Api.getInstance().get_access("terminal"):
             if len(self.obj.selection) > 0:
-                self.obj.terminalbox.external(self.obj.selection[0])
+                if Api.getInstance().get(DB_BASE, self.obj.selection[0], KEY_TUNNEL_IP) != None:
+                    self.obj.terminalbox.external_tunnel(self.obj.selection[0])
+                else:
+                    self.obj.terminalbox.external(self.obj.selection[0])
+
 
     def on_open_internal_terminal(self, e=None):
         if Api.getInstance().get_access("terminal"):
@@ -97,11 +118,13 @@ class GtkEvents(Thread):
                 key = keys[0]
             else:
                 return False
+            self.obj.call_select = False
+            self.win.tree.expand_all()
             if self.search_function(key, [0]):
+                self.obj.call_select = True
                 self.on_selection_change(None)
 
     def search_function(self, key, path):
-        self.win.tree.expand_all()
         while True:
             npath = ':'.join(str(x) for x in path)
             try:
@@ -129,10 +152,10 @@ class GtkEvents(Thread):
         self.win.treeStore.clear()
         self._populate()
         self.win.tree.expand_all()
+        self.obj.call_select = True
         if len(self.obj.selection) > 0:
             if self.search_function(self.obj.selection[0], [0]):
                 self.on_selection_change(None)
-        self.obj.call_select = True
 
     def _populate(self, names=None, lst=None, parent=None):
         if lst == None:
@@ -200,6 +223,7 @@ class GtkEvents(Thread):
     def on_selection_change(self, widget):
         if self.obj.call_select:
             (model, pathlist) = self.win.tree.get_selection().get_selected_rows()
+            self.win.tree.scroll_to_cell(pathlist)
             value = []
             for path in pathlist:
                 cur = model.get_iter(path)
@@ -207,7 +231,6 @@ class GtkEvents(Thread):
                 while cur != None:
                     value.append(model.get_value(cur, 0))
                     cur = model.iter_parent(cur)
-
             if value != None:
                 if self.obj.selection != value:
                     changed = True
@@ -370,5 +393,6 @@ class GtkEvents(Thread):
         self._exec(self.on_refresh)
 
     def on_quit(self, widget, event=None):
+        self.obj.terminalbox.purge()
         self._exec(self.win.hide)
         self._exec(Gtk.main_quit)

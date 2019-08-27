@@ -14,9 +14,11 @@ from threading import Lock
 from gi.repository import Gtk, Gdk, GLib, Vte
 from Core.Libs.Config import Config
 from Core.Libs.Api import Api
+from Constants import *
 class Terminal:
     def __init__(self):
         self.terminals = dict()
+        self.spawns = dict()
         self._lock = Lock()
 
     def reload_access(self):
@@ -30,10 +32,9 @@ class Terminal:
     def build(self, key):
         cmd = self.build_cmd(key)
         if cmd != None:
-            terminal = Vte.Terminal()
+            self.spawns[key] = Vte.Terminal()
 
-            self.terminals[key] = terminal
-            terminal.spawn_sync(
+            self.spawns[key].spawn_sync(
                 Vte.PtyFlags.DEFAULT,
                 os.environ['HOME'],
                 ["/bin/bash", "-c", cmd],
@@ -44,7 +45,7 @@ class Terminal:
             )
             swin = Gtk.ScrolledWindow()
             swin.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-            swin.add_with_viewport(terminal)
+            swin.add_with_viewport(self.spawns[key])
 
             return swin
         else:
@@ -101,6 +102,19 @@ class Terminal:
         except:
             return None
 
+
+    def build_cmd_tunnel(self, key):
+        try:
+            cmd = "sudo sshpass -p '[TunnelPassword]' sshuttle -e 'ssh -q -o CheckHostIP=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' -r [TunnelUsername]@[TunnelServer]:[TunnelPort] [TunnelNetwork]"
+            cmd = cmd.replace("[TunnelPassword]", str(Api.getInstance().get(DB_BASE, key, KEY_TUNNEL_PASSWORD)).replace("'","\\'"))
+            cmd = cmd.replace("[TunnelUsername]", str(Api.getInstance().get(DB_BASE, key, KEY_TUNNEL_USER)))
+            cmd = cmd.replace("[TunnelServer]", str(Api.getInstance().get(DB_BASE, key, KEY_TUNNEL_IP)))
+            cmd = cmd.replace("[TunnelPort]", str(Api.getInstance().get(DB_BASE, key, KEY_TUNNEL_PORT)))
+            cmd = cmd.replace("[TunnelNetwork]", str(Api.getInstance().get(DB_BASE, key, KEY_TUNNEL_NETWORK)))
+            return cmd
+        except:
+            return None
+
     def internal(self, id, force=False):
         if force == True:
             self.terminals[id] = self.build(id)
@@ -116,5 +130,13 @@ class Terminal:
             os.system(str(Config.getInstance().get("TerminalCommand")
                           ).strip()+' -e "'+cmd+'" &')
 
-
-
+    def external_tunnel(self, key):
+        self.reload_access()
+        cmd = self.build_cmd_tunnel(key)
+        if cmd != None:
+            os.system(str(Config.getInstance().get("TerminalCommand")
+                          ).strip()+' -e "'+cmd+'" &')
+    def purge(self):
+        ll = list(self.spawns.keys())
+        for t in ll:
+            del self.spawns[t]
